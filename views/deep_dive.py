@@ -118,8 +118,7 @@ def render_deep_dive_view(avatar_path: str):
 
                 with st.spinner("AI面接官が全体の回答を分析し、評価レポートをまとめています..."):
                     eval_json = st.session_state.interviewer.generate_evaluation_report(
-                        es_pr=st.session_state.es_pr,
-                        job_type=st.session_state.job_type,
+                        es_data=st.session_state.es_data,
                         question_1=st.session_state.question_1,
                         answer_1=st.session_state.user_answer_1,
                         question_2=st.session_state.deep_dive_text,

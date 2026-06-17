@@ -68,8 +68,7 @@ def render_question_view(avatar_path: str):
 
                 with st.spinner("AI面接官があなたの回答を評価し、深掘り質問を構成しています..."):
                     feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
-                        es_pr=st.session_state.es_pr,
-                        job_type=st.session_state.job_type,
+                        es_data=st.session_state.es_data,
                         question_1=st.session_state.question_1,
                         answer_1=st.session_state.user_answer_1
                     )
