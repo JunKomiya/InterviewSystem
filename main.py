@@ -2,9 +2,10 @@ import os
 import sys
 
 # Windows protobuf parsing fix for MediaPipe (reread / relaunch if not set at OS level)
+LAUNCH_WARNING = False
 if os.environ.get('PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION') != 'python':
     os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+    LAUNCH_WARNING = True
 
 import streamlit as st
 import asyncio

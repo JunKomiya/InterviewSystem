@@ -4,7 +4,17 @@ import sys
 # Windows protobuf parsing fix for MediaPipe (reread / relaunch if not set at OS level)
 if os.environ.get('PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION') != 'python':
     os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+    script_path = os.path.abspath(__file__)
+    args = [sys.executable, script_path] + sys.argv[1:]
+    
+    quoted_args = []
+    for arg in args:
+        if ' ' in arg and not (arg.startswith('"') and arg.endswith('"')):
+            quoted_args.append(f'"{arg}"')
+        else:
+            quoted_args.append(arg)
+            
+    os.execv(sys.executable, quoted_args)
 
 import cv2
 import mediapipe as mp
