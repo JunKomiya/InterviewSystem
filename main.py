@@ -21,8 +21,7 @@ import cv2
 import mediapipe as mp
 import threading
 import numpy as np
-from google import genai
-from google.genai import types
+from gemini_interviewer import GeminiInterviewer
 
 # ページ基本設定
 st.set_page_config(
@@ -472,28 +471,7 @@ def test_camera_capture(camera_index: int):
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         return frame_rgb, f"WARNING: カメラ画像は取得できましたが、目線解析モデル(MediaPipe)の初期化中にエラーが発生しました ({e})。視線追跡はスキップされ、評価画面では固定値(78%)が表示されますが、面接自体は実施可能です。"
 
-def verify_api_key(api_key: str) -> tuple[bool, str]:
-    if not api_key.strip():
-        return False, "APIキーが入力されていません。"
-    try:
-        client = genai.Client(api_key=api_key.strip())
-        # 簡易疎通テスト
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents="PING"
-        )
-        if response.text:
-            return True, f"接続成功! モデル (gemini-2.5-flash) が利用可能です。\n(応答例: {response.text.strip()[:60]}...)"
-        return False, "APIからの応答が空でした。"
-    except Exception as e:
-        error_msg = str(e)
-        if "503" in error_msg or "UNAVAILABLE" in error_msg:
-            return False, "ERROR 503: Gemini APIは現在一時的に高負荷なため、利用できません。時間をおいて再試行してください。"
-        elif "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-            return False, "ERROR 429: APIキーの利用制限（クォータ）を超過しました。無料枠の上限に達した可能性があります。"
-        elif "400" in error_msg or "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower():
-            return False, "ERROR 400: APIキーが無効であるか、形式が正しくありません。Google AI Studioのキーを正確に入力してください。"
-        return False, f"接続エラーが発生しました: {error_msg}"
+
 
 # 非同期での音声生成
 async def generate_tts_async(text: str, filename: str):
@@ -514,28 +492,7 @@ def generate_tts(text: str, filename: str) -> bool:
         st.error(f"音声生成エラー: {e}")
         return False
 
-# Gemini API の呼び出し関数
-def call_gemini(system_instruction: str, prompt: str, api_key: str) -> str:
-    api_key_clean = api_key.strip() if api_key else ""
-    if not api_key_clean:
-        api_key_clean = os.environ.get("GEMINI_API_KEY", "").strip()
-        
-    if not api_key_clean:
-        raise RuntimeError("APIキーが設定されていません。")
-        
-    try:
-        client = genai.Client(api_key=api_key_clean)
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json"
-            )
-        )
-        return response.text
-    except Exception as e:
-        raise RuntimeError(f"Gemini API 呼び出し中にエラーが発生しました: {e} (APIキーが有効であるか、ネットワーク接続を確認してください)")
+
 
 # 一時ファイルのクリーンアップ処理
 def cleanup_temp_files():
@@ -611,6 +568,7 @@ if "initialized" not in st.session_state:
     st.session_state.job_type = ""
     st.session_state.mode = "MOCK"  # MOCK or AI
     st.session_state.api_key = ""
+    st.session_state.interviewer = None
     st.session_state.audio_path = ""
     st.session_state.question_1 = ""
     st.session_state.user_answer_1 = ""
@@ -894,7 +852,7 @@ if st.session_state.step == "SETUP":
         if st.session_state.mode == "AI":
             env_key_exists = "GEMINI_API_KEY" in os.environ
             help_txt = "環境変数 GEMINI_API_KEY が検出されました。入力しなくても動作可能です。" if env_key_exists else "Google AI StudioのAPIキーを入力してください。"
-            
+
             # APIキー入力とテストボタンを横並びにする
             col_key, col_btn = st.columns([2, 1])
             with col_key:
@@ -906,11 +864,16 @@ if st.session_state.step == "SETUP":
                     help=help_txt
                 )
                 st.session_state.api_key = gemini_key.strip()
+                # インタビュアークラスのインスタンス化または更新
+                if st.session_state.api_key or os.environ.get("GEMINI_API_KEY"):
+                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
             with col_btn:
                 st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True) # 余白合わせ
                 if st.button("🔑 接続テスト"):
                     with st.spinner("API接続確認中..."):
-                        success, msg = verify_api_key(st.session_state.api_key)
+                        if not st.session_state.get("interviewer"):
+                            st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                        success, msg = st.session_state.interviewer.verify_connection()
                         st.session_state.api_test_result = {"success": success, "msg": msg}
             
             # API接続テスト結果の表示
@@ -1182,26 +1145,15 @@ if st.session_state.step == "SETUP":
             
             # --- AIモード時の第一問生成 ---
             if st.session_state.mode == "AI":
-                system_instruction = (
-                    "あなたは優秀な企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）と志望職種を読み、本番の面接と同じクオリティの最初の質問を1つ生成してください。\n"
-                    "職種（特に技術職などの場合）に応じた具体的な内容を含めてください。\n"
-                    "最初の質問では、まず自己紹介を促し、続いてESに書かれた強みや経歴について簡潔に説明するように求めてください。\n\n"
-                    "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
-                    "{\n"
-                    '    "question": "最初の質問文"\n'
-                    "}"
-                )
-                prompt = json.dumps({
-                    "name": st.session_state.name,
-                    "job_type": st.session_state.job_type,
-                    "es_pr": st.session_state.es_pr
-                }, ensure_ascii=False)
-                
                 with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
                     try:
-                        response = call_gemini(system_instruction, prompt, st.session_state.api_key)
-                        res_json = json.loads(response)
-                        q1_text = res_json.get("question", "")
+                        if not st.session_state.get("interviewer"):
+                            st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                        q1_text = st.session_state.interviewer.generate_first_question(
+                            name=st.session_state.name,
+                            job_type=st.session_state.job_type,
+                            es_pr=st.session_state.es_pr
+                        )
                     except Exception as e:
                         import traceback
                         error_trace = traceback.format_exc()
@@ -1289,29 +1241,16 @@ elif st.session_state.step == "QUESTION":
                 
                 # --- AIモード時の深掘り質問生成 ---
                 if st.session_state.mode == "AI":
-                    system_instruction = (
-                        "あなたは企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）、志望職種、第一問の質問、およびそれに対する学生の回答を読み、回答内容を深く掘り下げる「深掘り質問」を1つ生成してください。\n"
-                        "回答の中で曖昧な部分や、特に強調されている専門用語（例: 開発言語、手法など）に焦点を当て、具体的にどのような行動をとったか、あるいはどのような困難を克服したかを聞いてください。\n"
-                        "また、回答に対する面接官らしい一言リアクション（肯定・共感・技術や経験に対する興味）を添えてください。\n\n"
-                        "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
-                        "{\n"
-                        '    "feedback_intro": "回答への一言リアクション・評価（1〜2文）",\n'
-                        '    "question": "深掘り質問の文章"\n'
-                        "}"
-                    )
-                    prompt = json.dumps({
-                        "es_pr": st.session_state.es_pr,
-                        "job_type": st.session_state.job_type,
-                        "question_1": st.session_state.question_1,
-                        "answer_1": st.session_state.user_answer_1
-                    }, ensure_ascii=False)
-                    
                     with st.spinner("AI面接官があなたの回答を評価し、深掘り質問を構成しています..."):
                         try:
-                            response = call_gemini(system_instruction, prompt, st.session_state.api_key)
-                            res_json = json.loads(response)
-                            feedback_intro = res_json.get("feedback_intro", "")
-                            deep_dive_txt = res_json.get("question", "")
+                            if not st.session_state.get("interviewer"):
+                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                            feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
+                                es_pr=st.session_state.es_pr,
+                                job_type=st.session_state.job_type,
+                                question_1=st.session_state.question_1,
+                                answer_1=st.session_state.user_answer_1
+                            )
                         except Exception as e:
                             st.warning(f"AIでの深掘り質問生成に失敗したため、モックデータで代替します。({e})")
                             st.session_state.mode = "MOCK"
