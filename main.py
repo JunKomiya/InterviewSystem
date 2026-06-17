@@ -502,7 +502,7 @@ def cleanup_temp_files():
         except Exception: pass
     # ビデオファイル（新形式のwebmと旧形式のmp4の双方をクリーンアップ）
     for ext in ["*.webm", "*.mp4"]:
-        for f in glob.glob(f"temp_gaze_timelapse_{ext}"):
+        for f in glob.glob(os.path.join("videos", f"temp_gaze_timelapse_{ext}")):
             try: os.remove(f)
             except Exception: pass
     # マップ画像ファイル
@@ -1346,8 +1346,11 @@ elif st.session_state.step == "DEEP_DIVE":
                     with st.spinner("カメラをオフにし、結果の解析を行っています..."):
                         st.session_state.recorder.stop()
                         ts = int(time.time())
+                        # 動画専用フォルダの作成
+                        video_dir = "videos"
+                        os.makedirs(video_dir, exist_ok=True)
                         # ブラウザでの再生互換性確保のため、.mp4ではなく.webm形式でタイムラプス動画を出力します
-                        video_fn = f"temp_gaze_timelapse_{ts}.webm"
+                        video_fn = os.path.join(video_dir, f"temp_gaze_timelapse_{ts}.webm")
                         map_fn = f"temp_gaze_map_{ts}.png"
                         
                         # 静止画の生成は高速なので同期で実行

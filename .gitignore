@@ -21,6 +21,9 @@ temp_gaze_timelapse_*.webm
 temp_gaze_map_*.png
 welcome.mp3
 
+# Videos directory
+videos/
+
 # Scratch directory
 scratch/
 
