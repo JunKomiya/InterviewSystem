@@ -1393,39 +1393,18 @@ elif st.session_state.step == "DEEP_DIVE":
                 
                 # --- AIモード時の総合評価生成 ---
                 if st.session_state.mode == "AI":
-                    system_instruction = (
-                        "あなたは優秀なキャリアアドバイザー、および企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）、志望職種、および面接の対話ログを元に、総合的な面接の評価レポートを作成してください。\n\n"
-                        "以下の項目について評価してください：\n"
-                        "1. consistency_score (0〜100点): 回答の一貫性。ESの内容と実際の回答が矛盾なく繋がっているか。\n"
-                        "2. content_quality_score (0〜100点): 回答の適切さ・具体性。エピソードの具体性や課題解決の深さ、職種へのマッチ度。\n\n"
-                        "評価に基づき、総合スコア（0〜100点）と総合判定ランク（S, A, B, Cのいずれか）を決定してください。\n"
-                        "また、全体の総評（会話の一貫性や強みがアピールできていた点へのフィードバック）と、今後の具体的な改善アドバイスを記述してください。\n\n"
-                        "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
-                        "{\n"
-                        '    "overall_score": 総合スコア（数値）,\n'
-                        '    "rank": "総合判定ランク（文字列：S、A、B、Cのいずれか）",\n'
-                        '    "consistency_score": 一貫性スコア（数値）,\n'
-                        '    "content_quality_score": 適切さスコア（数値）,\n'
-                        '    "evaluation_summary": "面接官からの総評・フィードバック内容",\n'
-                        '    "improvement_advice": "具体的な改善アドバイス内容"\n'
-                        "}"
-                    )
-                    
-                    prompt = json.dumps({
-                        "es_pr": st.session_state.es_pr,
-                        "job_type": st.session_state.job_type,
-                        "conversation_log": [
-                            {"speaker": "interviewer", "text": st.session_state.question_1},
-                            {"speaker": "student", "text": st.session_state.user_answer_1},
-                            {"speaker": "interviewer", "text": st.session_state.deep_dive_text},
-                            {"speaker": "student", "text": st.session_state.user_answer_2}
-                        ]
-                    }, ensure_ascii=False)
-                    
                     with st.spinner("AI面接官が全体の回答を分析し、評価レポートをまとめています..."):
                         try:
-                            response = call_gemini(system_instruction, prompt, st.session_state.api_key)
-                            eval_json = json.loads(response)
+                            if not st.session_state.get("interviewer"):
+                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                            eval_json = st.session_state.interviewer.generate_evaluation_report(
+                                es_pr=st.session_state.es_pr,
+                                job_type=st.session_state.job_type,
+                                question_1=st.session_state.question_1,
+                                answer_1=st.session_state.user_answer_1,
+                                question_2=st.session_state.deep_dive_text,
+                                answer_2=st.session_state.user_answer_2
+                            )
                         except Exception as e:
                             st.warning(f"AIでの評価生成に失敗したため、モックデータで代替します。({e})")
                             st.session_state.mode = "MOCK"
