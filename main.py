@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 from session_manager import init_session, stop_recorder
+from views.start import render_start_view
 from views.setup import render_setup_view
 from views.question import render_question_view
 from views.deep_dive import render_deep_dive_view
@@ -46,7 +47,9 @@ st.markdown("""
 avatar_path = "interviewer_avatar.png"
 
 # ルーティング処理 (現在のステップに応じてビューを描画)
-if st.session_state.step == "SETUP":
+if st.session_state.step == "START":
+    render_start_view(avatar_path)
+elif st.session_state.step == "SETUP":
     render_setup_view(avatar_path)
 elif st.session_state.step == "QUESTION":
     render_question_view(avatar_path)

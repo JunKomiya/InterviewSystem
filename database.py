@@ -49,6 +49,20 @@ def init_db():
     )
     ''')
     
+    # 新ES項目カラムの自動追加（存在しない場合のみ追加、エラー無視）
+    new_columns = [
+        ("final_academic_background", "TEXT"),
+        ("tech_skills", "TEXT"),
+        ("qualifications", "TEXT"),
+        ("experienced_processes", "TEXT"),
+        ("experienced_processes_content", "TEXT")
+    ]
+    for col_name, col_type in new_columns:
+        try:
+            cursor.execute(f"ALTER TABLE interview_results ADD COLUMN {col_name} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+            
     # サンプルデータの追加（questionsが空の場合のみ）
     cursor.execute("SELECT COUNT(*) FROM questions")
     if cursor.fetchone()[0] == 0:
@@ -65,7 +79,10 @@ def init_db():
 
 def save_interview_result(user_name: str, job_type: str, overall_score: int, rank: str, 
                           consistency_score: int, content_quality_score: int, eye_contact_score: int, 
-                          eval_text: str, user_answer_1: str, user_answer_2: str) -> bool:
+                          eval_text: str, user_answer_1: str, user_answer_2: str,
+                          final_academic_background: str = "", tech_skills: str = "",
+                          qualifications: str = "", experienced_processes: str = "",
+                          experienced_processes_content: str = "") -> bool:
     """面接練習結果をDBに保存します。"""
     try:
         conn = get_connection()
@@ -76,12 +93,16 @@ def save_interview_result(user_name: str, job_type: str, overall_score: int, ran
         INSERT INTO interview_results (
             user_name, job_type, overall_score, rank, 
             consistency_score, content_quality_score, eye_contact_score, 
-            eval_text, user_answer_1, user_answer_2, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            eval_text, user_answer_1, user_answer_2, created_at,
+            final_academic_background, tech_skills, qualifications,
+            experienced_processes, experienced_processes_content
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             user_name, job_type, overall_score, rank,
             consistency_score, content_quality_score, eye_contact_score,
-            eval_text, user_answer_1, user_answer_2, created_at
+            eval_text, user_answer_1, user_answer_2, created_at,
+            final_academic_background, tech_skills, qualifications,
+            experienced_processes, experienced_processes_content
         ))
         
         # 互換性テーブル(interview_logs)にも記録

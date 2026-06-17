@@ -164,7 +164,12 @@ def render_deep_dive_view(avatar_path: str):
                         eye_contact_score=st.session_state.eye_contact_score,
                         eval_text=st.session_state.eval_text,
                         user_answer_1=st.session_state.user_answer_1,
-                        user_answer_2=st.session_state.user_answer_2
+                        user_answer_2=st.session_state.user_answer_2,
+                        final_academic_background=st.session_state.final_academic_background,
+                        tech_skills=st.session_state.tech_skills,
+                        qualifications=st.session_state.qualifications,
+                        experienced_processes=", ".join(st.session_state.experienced_processes),
+                        experienced_processes_content=st.session_state.experienced_processes_content
                     )
                     
                     st.session_state.step = "EVALUATION"

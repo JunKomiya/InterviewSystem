@@ -22,8 +22,14 @@ def init_session():
         """, unsafe_allow_html=True)
         
         # セッション状態変数の初期設定
-        st.session_state.step = "SETUP"  # SETUP -> QUESTION -> DEEP_DIVE -> EVALUATION
+        st.session_state.step = "START"  # START -> SETUP -> QUESTION -> DEEP_DIVE -> EVALUATION
         st.session_state.name = ""
+        st.session_state.final_academic_background = ""
+        st.session_state.tech_skills = ""
+        st.session_state.qualifications = ""
+        st.session_state.experienced_processes = []
+        st.session_state.experienced_processes_content = ""
+        st.session_state.es_data = {}
         st.session_state.es_pr = ""
         st.session_state.job_type = ""
         st.session_state.mode = "MOCK"  # MOCK or AI
@@ -66,6 +72,12 @@ def reset_session():
     # 状態変数の初期化
     st.session_state.step = "SETUP"
     st.session_state.name = ""
+    st.session_state.final_academic_background = ""
+    st.session_state.tech_skills = ""
+    st.session_state.qualifications = ""
+    st.session_state.experienced_processes = []
+    st.session_state.experienced_processes_content = ""
+    st.session_state.es_data = {}
     st.session_state.es_pr = ""
     st.session_state.audio_path = ""
     st.session_state.question_1 = ""
