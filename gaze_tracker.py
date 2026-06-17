@@ -4,14 +4,7 @@ import cv2
 import mediapipe as mp
 import threading
 import numpy as np
-
-# ログを確実にファイル出力するためのヘルパー関数
-def log_gaze(msg: str):
-    try:
-        with open("gaze_recorder.log", "a", encoding="utf-8") as f:
-            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-    except Exception:
-        pass
+from utils import log_gaze
 
 # フェイシャル特徴量の解析ヘルパー関数
 def analyze_face_features(landmarks):

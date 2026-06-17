@@ -24,9 +24,10 @@ from gaze_tracker import (
     draw_face_landmarks,
     draw_radar_overlay
 )
+from utils import TEMP_DIR, log_gaze, cleanup_temp_files
+from session_manager import init_session, reset_session, stop_recorder
 
 # 一時ファイルフォルダの設定
-TEMP_DIR = "temp_assets"
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # CSSの読み込み
@@ -47,81 +48,12 @@ st.set_page_config(
 # 起動直後にCSSをロード
 load_css()
 
-# ログを確実にファイル出力するためのヘルパー関数
-def log_gaze(msg: str):
-    try:
-        with open("gaze_recorder.log", "a", encoding="utf-8") as f:
-            f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
-    except Exception:
-        pass
-
-
-
-# 一時ファイルのクリーンアップ処理
-def cleanup_temp_files():
-    # 音声ファイル
-    for f in glob.glob(os.path.join(TEMP_DIR, "temp_audio_*.mp3")):
-        try: os.remove(f)
-        except Exception: pass
-    # ビデオファイル（webmとmp4）
-    for ext in ["*.webm", "*.mp4"]:
-        for f in glob.glob(os.path.join(TEMP_DIR, f"temp_gaze_timelapse_{ext}")):
-            try: os.remove(f)
-            except Exception: pass
-    # マップ画像ファイル
-    for f in glob.glob(os.path.join(TEMP_DIR, "temp_gaze_map_*.png")):
-        try: os.remove(f)
-        except Exception: pass
-
 # セッション状態の初期化と初回ローディング画面
-if "initialized" not in st.session_state:
-    st.markdown("""
-        <div class="loading-container">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Loading...</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # 各セッション情報の初期化
-    st.session_state.step = "SETUP"  # SETUP -> QUESTION -> DEEP_DIVE -> EVALUATION
-    st.session_state.name = ""
-    st.session_state.es_pr = ""
-    st.session_state.job_type = ""
-    st.session_state.mode = "MOCK"  # MOCK or AI
-    st.session_state.api_key = ""
-    st.session_state.interviewer = None
-    st.session_state.audio_path = ""
-    st.session_state.question_1 = ""
-    st.session_state.user_answer_1 = ""
-    st.session_state.deep_dive_text = ""
-    st.session_state.deep_dive_audio_path = ""
-    st.session_state.user_answer_2 = ""
-    st.session_state.eval_text = ""
-    st.session_state.eval_audio_path = ""
-    st.session_state.consistency_score = 90
-    st.session_state.content_quality_score = 90
-    st.session_state.eye_contact_score = 78
-    st.session_state.overall_score = 90
-    st.session_state.rank = "A"
-    st.session_state.gaze_video_path = ""
-    st.session_state.gaze_map_path = ""
-    st.session_state.camera_index = 0
-    st.session_state.api_test_result = None
-    st.session_state.camera_test_result = None
-    st.session_state.h_range = (0.40, 0.60)
-    st.session_state.v_range = (0.38, 0.62)
-    
-    # カメラデバイスのスキャン（重い処理）
-    st.session_state.available_cameras = scan_available_cameras()
-    
-    # 初期化完了フラグ
-    st.session_state.initialized = True
-    st.rerun()
+init_session()
 
 # 以前の残存している視線トラッキングスレッドがあれば停止
-if "recorder" in st.session_state and st.session_state.step == "SETUP":
-    if st.session_state.recorder.is_recording:
-        st.session_state.recorder.stop()
+if st.session_state.step == "SETUP":
+    stop_recorder()
 
 
 
@@ -880,21 +812,7 @@ elif st.session_state.step == "EVALUATION":
         # リセットボタン
         st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
         if st.button("面接練習を最初からやり直す"):
-            cleanup_temp_files()
-            st.session_state.step = "SETUP"
-            st.session_state.name = ""
-            st.session_state.es_pr = ""
-            st.session_state.audio_path = ""
-            st.session_state.question_1 = ""
-            st.session_state.user_answer_1 = ""
-            st.session_state.deep_dive_text = ""
-            st.session_state.deep_dive_audio_path = ""
-            st.session_state.user_answer_2 = ""
-            st.session_state.eval_text = ""
-            st.session_state.eval_audio_path = ""
-            st.session_state.gaze_video_path = ""
-            st.session_state.gaze_map_path = ""
-            st.session_state.eye_contact_score = 78
+            reset_session()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
