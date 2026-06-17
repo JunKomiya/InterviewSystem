@@ -2,21 +2,36 @@ import asyncio
 import edge_tts
 import os
 
-# 喋らせたいテキストと、声の種類（日本の女性の声）を指定
-TEXT = "こんにちは。面接練習システムへようこそ。本日はよろしくお願いいたします。"
 VOICE = "ja-JP-NanamiNeural"
-OUTPUT_FILE = "welcome.mp3"
 
-async def amain() -> None:
-    # 音声ファイルを生成する
-    communicate = edge_tts.Communicate(TEXT, VOICE)
-    await communicate.save(OUTPUT_FILE)
-    
-    # 生成された音声をパソコンで再生する
-    print("音声ファイルを再生します...")
-    os.system(f"start {OUTPUT_FILE}")
+async def generate_tts_async(text: str, filename: str, voice: str = VOICE):
+    """非同期での音声生成を行います。"""
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(filename)
+
+def generate_tts(text: str, filename: str, voice: str = VOICE) -> bool:
+    """同期ラッパーを用いて音声ファイルを生成します。"""
+    try:
+        try:
+            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        except AttributeError:
+            pass
+        
+        asyncio.run(generate_tts_async(text, filename, voice))
+        return True
+    except Exception as e:
+        print(f"音声生成エラー: {e}")
+        return False
 
 if __name__ == "__main__":
-    # Windowsで動かすための決まり文句
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(amain())
+    # 既存の動作確認用のメイン処理を維持
+    TEXT = "こんにちは。面接練習システムへようこそ。本日はよろしくお願いいたします。"
+    OUTPUT_FILE = "welcome.mp3"
+    
+    print("テスト用の音声を生成中...")
+    if generate_tts(TEXT, OUTPUT_FILE):
+        # 生成された音声をパソコンで再生する
+        print("音声ファイルを再生します...")
+        os.system(f"start {OUTPUT_FILE}")
+    else:
+        print("音声生成に失敗しました。")

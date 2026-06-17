@@ -13,7 +13,6 @@ if os.environ.get('PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION') != 'python':
 
 import streamlit as st
 import asyncio
-import edge_tts
 import glob
 import time
 import json
@@ -22,6 +21,18 @@ import mediapipe as mp
 import threading
 import numpy as np
 from gemini_interviewer import GeminiInterviewer
+from tts import generate_tts
+
+# 一時ファイルフォルダの設定
+TEMP_DIR = "temp_assets"
+os.makedirs(TEMP_DIR, exist_ok=True)
+
+# CSSの読み込み
+def load_css():
+    css_path = os.path.join(os.path.dirname(__file__), "style.css")
+    if os.path.exists(css_path):
+        with open(css_path, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # ページ基本設定
 st.set_page_config(
@@ -30,6 +41,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# 起動直後にCSSをロード
+load_css()
 
 # フェイシャル特徴量の解析ヘルパー関数
 def analyze_face_features(landmarks):
@@ -497,64 +511,22 @@ def generate_tts(text: str, filename: str) -> bool:
 # 一時ファイルのクリーンアップ処理
 def cleanup_temp_files():
     # 音声ファイル
-    for f in glob.glob("temp_audio_*.mp3"):
+    for f in glob.glob(os.path.join(TEMP_DIR, "temp_audio_*.mp3")):
         try: os.remove(f)
         except Exception: pass
-    # ビデオファイル（新形式のwebmと旧形式のmp4の双方をクリーンアップ）
+    # ビデオファイル（webmとmp4）
     for ext in ["*.webm", "*.mp4"]:
-        for f in glob.glob(os.path.join("videos", f"temp_gaze_timelapse_{ext}")):
+        for f in glob.glob(os.path.join(TEMP_DIR, f"temp_gaze_timelapse_{ext}")):
             try: os.remove(f)
             except Exception: pass
     # マップ画像ファイル
-    for f in glob.glob("temp_gaze_map_*.png"):
+    for f in glob.glob(os.path.join(TEMP_DIR, "temp_gaze_map_*.png")):
         try: os.remove(f)
         except Exception: pass
 
 # セッション状態の初期化と初回ローディング画面
 if "initialized" not in st.session_state:
     st.markdown("""
-        <style>
-            .stApp {
-                background: linear-gradient(135deg, #0e0b1e 0%, #141029 50%, #06030e 100%) !important;
-                color: #e2e8f0;
-                font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-            }
-            .loading-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 70vh;
-                width: 100%;
-            }
-            .loading-spinner {
-                border: 4px solid rgba(255, 255, 255, 0.05);
-                border-top: 4px solid #6c5ce7;
-                border-radius: 50%;
-                width: 50px;
-                height: 50px;
-                animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-                margin-bottom: 20px;
-                box-shadow: 0 0 25px rgba(108, 92, 231, 0.5);
-            }
-            .loading-text {
-                font-size: 1.6rem;
-                font-weight: 700;
-                background: linear-gradient(90deg, #a29bfe, #6c5ce7, #00cec9);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                letter-spacing: 2px;
-                animation: blink 2s infinite ease-in-out;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            @keyframes blink {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 1; }
-            }
-        </style>
         <div class="loading-container">
             <div class="loading-spinner"></div>
             <div class="loading-text">Loading...</div>
@@ -602,224 +574,7 @@ if "recorder" in st.session_state and st.session_state.step == "SETUP":
     if st.session_state.recorder.is_recording:
         st.session_state.recorder.stop()
 
-# プレミアムなダークモードUIデザインのインジェクション
-st.markdown("""
-<style>
-    .stApp {
-        background: linear-gradient(135deg, #0e0b1e 0%, #141029 50%, #06030e 100%);
-        color: #e2e8f0;
-        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-    }
-    label, 
-    div[data-testid="stWidgetLabel"] p, 
-    div[data-testid="stWidgetLabel"] label,
-    div[data-testid="stRadio"] label,
-    div[data-testid="stRadio"] label p,
-    div[data-testid="stCheckbox"] label,
-    div[data-testid="stCheckbox"] label p {
-        color: #f1f5f9 !important;
-        font-weight: 500 !important;
-    }
-    .header-container {
-        text-align: center;
-        padding: 30px 10px;
-        margin-bottom: 20px;
-    }
-    .main-title {
-        background: linear-gradient(90deg, #6c5ce7, #a29bfe, #00cec9);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2.8rem;
-        font-weight: 800;
-        margin-bottom: 5px;
-    }
-    .sub-title {
-        color: #a0aec0;
-        font-size: 1.1rem;
-        font-weight: 400;
-    }
-    .glass-card {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.07);
-        border-radius: 20px;
-        padding: 30px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        margin-bottom: 25px;
-    }
-    .interviewer-panel {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 20px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-    .avatar-wrapper {
-        margin: 0 auto 20px auto;
-        width: 160px;
-        height: 160px;
-        position: relative;
-    }
-    .avatar-img {
-        border-radius: 50%;
-        border: 4px solid #6c5ce7;
-        box-shadow: 0 0 25px rgba(108, 92, 231, 0.6);
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        animation: subtlePulse 2.5s infinite alternate;
-    }
-    @keyframes subtlePulse {
-        0% {
-            transform: scale(1.0);
-            box-shadow: 0 0 20px rgba(108, 92, 231, 0.5);
-        }
-        100% {
-            transform: scale(1.03);
-            box-shadow: 0 0 35px rgba(108, 92, 231, 0.8), 0 0 15px rgba(0, 206, 201, 0.4);
-        }
-    }
-    .status-badge {
-        display: inline-block;
-        padding: 6px 16px;
-        border-radius: 30px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 1.5px;
-        margin-top: 10px;
-    }
-    .status-speaking {
-        background: rgba(235, 77, 75, 0.15);
-        color: #ff7675;
-        border: 1px solid rgba(235, 77, 75, 0.3);
-    }
-    .status-listening {
-        background: rgba(9, 132, 227, 0.15);
-        color: #74b9ff;
-        border: 1px solid rgba(9, 132, 227, 0.3);
-    }
-    .chat-bubble {
-        padding: 20px;
-        border-radius: 18px;
-        margin-bottom: 20px;
-        font-size: 1.05rem;
-        line-height: 1.6;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-    }
-    .interviewer-bubble {
-        background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(108, 92, 231, 0.03) 100%);
-        border-left: 5px solid #6c5ce7;
-        border-top-left-radius: 4px;
-    }
-    .audio-container {
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 10px;
-        padding: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        margin-top: 10px;
-        margin-bottom: 15px;
-    }
-    .stButton>button {
-        background: linear-gradient(90deg, #6c5ce7 0%, #00cec9 100%);
-        color: #ffffff;
-        font-weight: 700;
-        border: none;
-        border-radius: 10px;
-        padding: 12px 28px;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
-        width: 100%;
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(108, 92, 231, 0.6), 0 0 15px rgba(0, 206, 201, 0.4);
-        color: #ffffff;
-    }
-    .stButton>button:active {
-        transform: translateY(1px);
-    }
-    .reset-btn>div>button {
-        background: transparent;
-        color: #a0aec0;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: none;
-    }
-    .reset-btn>div>button:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: none;
-    }
-    .rank-container {
-        text-align: center;
-        margin-bottom: 25px;
-    }
-    .rank-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 110px;
-        height: 110px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ff007f 0%, #7928ca 100%);
-        color: white;
-        font-size: 3.5rem;
-        font-weight: 900;
-        box-shadow: 0 0 35px rgba(121, 40, 202, 0.7);
-        margin: 10px auto;
-        border: 4px solid rgba(255, 255, 255, 0.25);
-        animation: glowPulse 2s infinite alternate;
-    }
-    @keyframes glowPulse {
-        0% { box-shadow: 0 0 25px rgba(121, 40, 202, 0.6); }
-        100% { box-shadow: 0 0 45px rgba(255, 0, 127, 0.8), 0 0 25px rgba(121, 40, 202, 0.6); }
-    }
-    .rank-label {
-        font-size: 1rem;
-        color: #cbd5e1;
-        font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-    }
-    .metric-row {
-        margin-bottom: 20px;
-    }
-    .metric-name {
-        font-weight: 600;
-        font-size: 1rem;
-        color: #94a3b8;
-    }
-    .metric-val {
-        float: right;
-        font-weight: 700;
-        color: #00cec9;
-        font-size: 1.1rem;
-    }
-    .metric-bar-bg {
-        background: rgba(255, 255, 255, 0.08);
-        height: 12px;
-        border-radius: 6px;
-        margin-top: 8px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.03);
-    }
-    .metric-bar-fill {
-        height: 100%;
-        border-radius: 6px;
-    }
-    .tracking-title {
-        color: #00cec9;
-        font-weight: 700;
-        border-left: 4px solid #00cec9;
-        padding-left: 10px;
-        margin-bottom: 20px;
-        margin-top: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
+
 
 # ヘッダー
 st.markdown("""
@@ -1143,33 +898,25 @@ if st.session_state.step == "SETUP":
             
             q1_text = ""
             
-            # --- AIモード時の第一問生成 ---
-            if st.session_state.mode == "AI":
-                with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
-                    try:
-                        if not st.session_state.get("interviewer"):
-                            st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
-                        q1_text = st.session_state.interviewer.generate_first_question(
-                            name=st.session_state.name,
-                            job_type=st.session_state.job_type,
-                            es_pr=st.session_state.es_pr
-                        )
-                    except Exception as e:
-                        import traceback
-                        error_trace = traceback.format_exc()
-                        log_gaze(f"[AI Q1 Error] Failed to generate question: {e}\n{error_trace}")
-                        st.warning(f"AIでの質問生成に失敗したため、モックデータで代替します。({e})")
-                        st.session_state.mode = "MOCK"
-            
-            # --- モックモード時の第一問作成 ---
-            if not q1_text:
-                q1_text = f"はじめまして、{st.session_state.name}さん。面接官のナナミです。本日はよろしくお願いいたします。それでは早速ですが、{st.session_state.job_type}の面接として、自己紹介をお願いいたします。併せて、エントリーシートに記載されたご自身の強みについてもお話しください。"
+            # --- 第一問生成 ---
+            if not st.session_state.get("interviewer"):
+                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
+            else:
+                st.session_state.interviewer.mode = st.session_state.mode
+                st.session_state.interviewer.api_key = st.session_state.api_key
+                
+            with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
+                q1_text = st.session_state.interviewer.generate_first_question(
+                    name=st.session_state.name,
+                    job_type=st.session_state.job_type,
+                    es_pr=st.session_state.es_pr
+                )
             
             st.session_state.question_1 = q1_text
             
             # 音声ファイルを生成
             timestamp = int(time.time())
-            filename = f"temp_audio_q1_{timestamp}.mp3"
+            filename = os.path.join(TEMP_DIR, f"temp_audio_q1_{timestamp}.mp3")
             
             with st.spinner("面接官の音声（TTS）を生成中..."):
                 success = generate_tts(q1_text, filename)
@@ -1236,44 +983,27 @@ elif st.session_state.step == "QUESTION":
             else:
                 st.session_state.user_answer_1 = user_ans.strip()
                 
-                deep_dive_txt = ""
-                feedback_intro = "ご回答ありがとうございます。"
-                
-                # --- AIモード時の深掘り質問生成 ---
-                if st.session_state.mode == "AI":
-                    with st.spinner("AI面接官があなたの回答を評価し、深掘り質問を構成しています..."):
-                        try:
-                            if not st.session_state.get("interviewer"):
-                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
-                            feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
-                                es_pr=st.session_state.es_pr,
-                                job_type=st.session_state.job_type,
-                                question_1=st.session_state.question_1,
-                                answer_1=st.session_state.user_answer_1
-                            )
-                        except Exception as e:
-                            st.warning(f"AIでの深掘り質問生成に失敗したため、モックデータで代替します。({e})")
-                            st.session_state.mode = "MOCK"
-                
-                # --- モックモード時の深掘り質問生成 ---
-                if not deep_dive_txt:
-                    es = st.session_state.es_pr
-                    ans = st.session_state.user_answer_1
-                    keywords = ["行動力", "計画性", "リーダーシップ", "コミュニケーション", "開発", "プロトタイプ", "解決"]
-                    selected_kw = "行動力"
-                    for kw in keywords:
-                        if kw in es or kw in ans:
-                            selected_kw = kw
-                            break
-                    feedback_intro = f"ご回答ありがとうございます、{st.session_state.name}さん。ご自身の強みである「{selected_kw}」を意識して、自発的に取り組まれている様子がよく伝わりました。"
-                    deep_dive_txt = f"それでは、その「{selected_kw}」を発揮した活動の中で、直面した「最も大きな困難」と、それをどのように乗り越えたかについて詳しく教えていただけますか？"
+                # --- 深掘り質問生成 ---
+                if not st.session_state.get("interviewer"):
+                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
+                else:
+                    st.session_state.interviewer.mode = st.session_state.mode
+                    st.session_state.interviewer.api_key = st.session_state.api_key
+
+                with st.spinner("AI面接官があなたの回答を評価し、深掘り質問を構成しています..."):
+                    feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
+                        es_pr=st.session_state.es_pr,
+                        job_type=st.session_state.job_type,
+                        question_1=st.session_state.question_1,
+                        answer_1=st.session_state.user_answer_1
+                    )
                 
                 st.session_state.deep_dive_text = f"{feedback_intro}\n\n{deep_dive_txt}"
                 deep_dive_tts = f"{feedback_intro} {deep_dive_txt}"
                 
                 # 音声ファイル生成
                 timestamp = int(time.time())
-                filename = f"temp_audio_q2_{timestamp}.mp3"
+                filename = os.path.join(TEMP_DIR, f"temp_audio_q2_{timestamp}.mp3")
                 
                 with st.spinner("面接官が質問を考えています..."):
                     success = generate_tts(deep_dive_tts, filename)
@@ -1346,12 +1076,9 @@ elif st.session_state.step == "DEEP_DIVE":
                     with st.spinner("カメラをオフにし、結果の解析を行っています..."):
                         st.session_state.recorder.stop()
                         ts = int(time.time())
-                        # 動画専用フォルダの作成
-                        video_dir = "videos"
-                        os.makedirs(video_dir, exist_ok=True)
-                        # ブラウザでの再生互換性確保のため、.mp4ではなく.webm形式でタイムラプス動画を出力します
-                        video_fn = os.path.join(video_dir, f"temp_gaze_timelapse_{ts}.webm")
-                        map_fn = f"temp_gaze_map_{ts}.png"
+                        # 動画・静止画を一時フォルダへ出力
+                        video_fn = os.path.join(TEMP_DIR, f"temp_gaze_timelapse_{ts}.webm")
+                        map_fn = os.path.join(TEMP_DIR, f"temp_gaze_map_{ts}.png")
                         
                         # 静止画の生成は高速なので同期で実行
                         st.session_state.recorder.generate_gaze_map(map_fn)
@@ -1392,61 +1119,44 @@ elif st.session_state.step == "DEEP_DIVE":
                             st.session_state.eye_contact_score = 0
                             st.session_state.gaze_measurement_warning = True
                 
-                eval_json = None
-                
-                # --- AIモード時の総合評価生成 ---
-                if st.session_state.mode == "AI":
-                    with st.spinner("AI面接官が全体の回答を分析し、評価レポートをまとめています..."):
-                        try:
-                            if not st.session_state.get("interviewer"):
-                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
-                            eval_json = st.session_state.interviewer.generate_evaluation_report(
-                                es_pr=st.session_state.es_pr,
-                                job_type=st.session_state.job_type,
-                                question_1=st.session_state.question_1,
-                                answer_1=st.session_state.user_answer_1,
-                                question_2=st.session_state.deep_dive_text,
-                                answer_2=st.session_state.user_answer_2
-                            )
-                        except Exception as e:
-                            st.warning(f"AIでの評価生成に失敗したため、モックデータで代替します。({e})")
-                            st.session_state.mode = "MOCK"
-                
-                # --- AI評価の取得またはモックデータの生成 ---
-                if eval_json:
-                    st.session_state.overall_score = eval_json.get("overall_score", 85)
-                    st.session_state.rank = eval_json.get("rank", "A")
-                    st.session_state.consistency_score = eval_json.get("consistency_score", 80)
-                    st.session_state.content_quality_score = eval_json.get("content_quality_score", 85)
-                    
-                    summary = eval_json.get("evaluation_summary", "")
-                    advice = eval_json.get("improvement_advice", "")
-                    
-                    st.session_state.eval_text = (
-                        f"お疲れ様でした、{st.session_state.name}さん！非常に実りある面接でした。\n\n"
-                        f"【総評】\n"
-                        f"{summary}\n\n"
-                        f"【今後の改善アドバイス】\n"
-                        f"{advice}"
-                    )
+                # --- 総合評価生成 ---
+                if not st.session_state.get("interviewer"):
+                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
                 else:
-                    st.session_state.overall_score = 88
-                    st.session_state.rank = "A"
-                    st.session_state.consistency_score = 90
-                    st.session_state.content_quality_score = 85
-                    st.session_state.eval_text = (
-                        f"お疲れ様でした、{st.session_state.name}さん！非常に熱意の伝わる素晴らしい面接でした。\n\n"
-                        f"【総評】\n"
-                        f"エントリーシートでアピールされていた強みと、実際の質問回答内容に強い一貫性があります。具体例も伴っており説得力があります。\n\n"
-                        f"【今後の改善アドバイス】\n"
-                        f"さらに評価を高めるためには、行動の動機（なぜそれをしようと思ったのか）や、活動を通じて得られた学びをどう活かすかについて少し言及を加えると良いでしょう。"
+                    st.session_state.interviewer.mode = st.session_state.mode
+                    st.session_state.interviewer.api_key = st.session_state.api_key
+
+                with st.spinner("AI面接官が全体の回答を分析し、評価レポートをまとめています..."):
+                    eval_json = st.session_state.interviewer.generate_evaluation_report(
+                        es_pr=st.session_state.es_pr,
+                        job_type=st.session_state.job_type,
+                        question_1=st.session_state.question_1,
+                        answer_1=st.session_state.user_answer_1,
+                        question_2=st.session_state.deep_dive_text,
+                        answer_2=st.session_state.user_answer_2
                     )
+                
+                st.session_state.overall_score = eval_json.get("overall_score", 88)
+                st.session_state.rank = eval_json.get("rank", "A")
+                st.session_state.consistency_score = eval_json.get("consistency_score", 90)
+                st.session_state.content_quality_score = eval_json.get("content_quality_score", 85)
+                
+                summary = eval_json.get("evaluation_summary", "")
+                advice = eval_json.get("improvement_advice", "")
+                
+                st.session_state.eval_text = (
+                    f"お疲れ様でした、{st.session_state.name}さん！非常に実りある面接でした。\n\n"
+                    f"【総評】\n"
+                    f"{summary}\n\n"
+                    f"【今後の改善アドバイス】\n"
+                    f"{advice}"
+                )
                 
                 eval_tts = f"面接練習お疲れ様でした。あなたのアピールポイントと改善点を含めた詳細な診断評価レポートを作成しましたので、画面をご確認ください。本日はお疲れ様でした！"
                 
                 # 音声ファイル生成
                 timestamp = int(time.time())
-                filename = f"temp_audio_eval_{timestamp}.mp3"
+                filename = os.path.join(TEMP_DIR, f"temp_audio_eval_{timestamp}.mp3")
                 
                 with st.spinner("面接官がフィードバックをまとめています..."):
                     success = generate_tts(eval_tts, filename)

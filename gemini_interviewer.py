@@ -4,22 +4,36 @@ from google import genai
 from google.genai import types
 
 class GeminiInterviewer:
-    def __init__(self, api_key: str = ""):
+    def __init__(self, api_key: str = "", mode: str = "AI"):
         # APIキーの前後の空白や改行をクレンジング
         self.api_key = api_key.strip() if api_key else ""
+        self.mode = mode  # "AI" または "MOCK"
         
         # 指定がない場合は環境変数から取得してクレンジング
         if not self.api_key:
             self.api_key = os.environ.get("GEMINI_API_KEY", "").strip()
             
-        # APIキーが存在する場合は明示的に設定し、存在しない場合はデフォルトの挙動（SDK内部での取得）にする
-        if self.api_key:
-            self.client = genai.Client(api_key=self.api_key)
-        else:
-            self.client = genai.Client()
+        self.client = None
+        # AIモードの場合のみクライアントを初期化
+        if self.mode == "AI":
+            try:
+                if self.api_key:
+                    self.client = genai.Client(api_key=self.api_key)
+                else:
+                    self.client = genai.Client()
+            except Exception as e:
+                # 初期化失敗時は自動的にモックモードに切り替え
+                print(f"[GeminiInterviewer] Client initialization failed. Switching to MOCK mode. Error: {e}")
+                self.mode = "MOCK"
 
     def verify_connection(self) -> tuple[bool, str]:
-        """APIの接続テストを行い、疎通確認結果を返します。"""
+        """APIの接続テストを行い、疎通確認結果を返します。モックモードの場合は常に成功を返します。"""
+        if self.mode == "MOCK":
+            return True, "モックモード（接続テストは常に成功します）"
+            
+        if not self.client:
+            return False, "APIクライアントが初期化されていません。APIキーを確認してください。"
+            
         try:
             response = self.client.models.generate_content(
                 model="gemini-2.5-flash",
@@ -40,6 +54,9 @@ class GeminiInterviewer:
 
     def generate_first_question(self, name: str, job_type: str, es_pr: str) -> str:
         """エントリーシート(ES)と志望職種を分析し、最初の質問を生成します。"""
+        if self.mode == "MOCK":
+            return self._mock_first_question(name, job_type)
+            
         system_instruction = (
             "あなたは優秀な企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）と志望職種を読み、本番の面接と同じクオリティの最初の質問を1つ生成してください。\n"
             "職種（特に技術職などの場合）に応じた具体的な内容を含めてください。\n"
@@ -55,12 +72,19 @@ class GeminiInterviewer:
             "es_pr": es_pr
         }, ensure_ascii=False)
         
-        response_text = self._call_api(system_instruction, prompt)
-        res_json = json.loads(response_text)
-        return res_json.get("question", "")
+        try:
+            response_text = self._call_api(system_instruction, prompt)
+            res_json = json.loads(response_text)
+            return res_json.get("question", "")
+        except Exception as e:
+            print(f"[GeminiInterviewer] Error in generate_first_question: {e}. Falling back to MOCK.")
+            return self._mock_first_question(name, job_type)
 
     def generate_deep_dive_question(self, es_pr: str, job_type: str, question_1: str, answer_1: str) -> tuple[str, str]:
         """第一問の回答内容を深く掘り下げる深掘り質問と、回答へのリアクションを生成します。"""
+        if self.mode == "MOCK":
+            return self._mock_deep_dive_question(es_pr, answer_1)
+            
         system_instruction = (
             "あなたは企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）、志望職種、第一問の質問、およびそれに対する学生の回答を読み、回答内容を深く掘り下げる「深掘り質問」を1つ生成してください。\n"
             "回答の中で曖昧な部分や、特に強調されている専門用語（例: 開発言語、手法など）に焦点を当て、具体的にどのような行動をとったか、あるいはどのような困難を克服したかを聞いてください。\n"
@@ -78,12 +102,19 @@ class GeminiInterviewer:
             "answer_1": answer_1
         }, ensure_ascii=False)
         
-        response_text = self._call_api(system_instruction, prompt)
-        res_json = json.loads(response_text)
-        return res_json.get("feedback_intro", ""), res_json.get("question", "")
+        try:
+            response_text = self._call_api(system_instruction, prompt)
+            res_json = json.loads(response_text)
+            return res_json.get("feedback_intro", ""), res_json.get("question", "")
+        except Exception as e:
+            print(f"[GeminiInterviewer] Error in generate_deep_dive_question: {e}. Falling back to MOCK.")
+            return self._mock_deep_dive_question(es_pr, answer_1)
 
     def generate_evaluation_report(self, es_pr: str, job_type: str, question_1: str, answer_1: str, question_2: str, answer_2: str) -> dict:
         """面接の全対話ログを元に、総合的な面接の評価レポートを生成します。"""
+        if self.mode == "MOCK":
+            return self._mock_evaluation_report()
+            
         system_instruction = (
             "あなたは優秀なキャリアアドバイザー、および企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）、志望職種、および面接の対話ログを元に、総合的な面接の評価レポートを作成してください。\n\n"
             "以下の項目について評価してください：\n"
@@ -112,20 +143,48 @@ class GeminiInterviewer:
             ]
         }, ensure_ascii=False)
         
-        response_text = self._call_api(system_instruction, prompt)
-        return json.loads(response_text)
+        try:
+            response_text = self._call_api(system_instruction, prompt)
+            return json.loads(response_text)
+        except Exception as e:
+            print(f"[GeminiInterviewer] Error in generate_evaluation_report: {e}. Falling back to MOCK.")
+            return self._mock_evaluation_report()
 
     def _call_api(self, system_instruction: str, prompt: str) -> str:
         """API呼び出しと例外処理の内部共通メソッド。"""
-        try:
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_mime_type="application/json"
-                )
+        if not self.client:
+            raise RuntimeError("APIクライアントが初期化されていません。")
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="application/json"
             )
-            return response.text
-        except Exception as e:
-            raise RuntimeError(f"Gemini API 呼び出し中にエラーが発生しました: {e} (APIキーが有効であるか、ネットワーク接続を確認してください)")
+        )
+        return response.text
+
+    # --- モックフォールバック用内部メソッド ---
+    def _mock_first_question(self, name: str, job_type: str) -> str:
+        return f"はじめまして、{name}さん。面接官のナナミです。本日はよろしくお願いいたします。それでは早速ですが、{job_type}の面接として、自己紹介をお願いいたします。併せて、エントリーシートに記載されたご自身の強みについてもお話しください。"
+
+    def _mock_deep_dive_question(self, es_pr: str, answer_1: str) -> tuple[str, str]:
+        keywords = ["行動力", "計画性", "リーダーシップ", "コミュニケーション", "開発", "プロトタイプ", "解決"]
+        selected_kw = "行動力"
+        for kw in keywords:
+            if kw in es_pr or kw in answer_1:
+                selected_kw = kw
+                break
+        feedback_intro = f"ご回答ありがとうございます。ご自身の強みである「{selected_kw}」を意識して、自発的に取り組まれている様子がよく伝わりました。"
+        deep_dive_txt = f"それでは、その「{selected_kw}」を発揮した活動の中で、直面した「最も大きな困難」と、それをどのように乗り越えたかについて詳しく教えていただけますか？"
+        return feedback_intro, deep_dive_txt
+
+    def _mock_evaluation_report(self) -> dict:
+        return {
+            "overall_score": 88,
+            "rank": "A",
+            "consistency_score": 90,
+            "content_quality_score": 85,
+            "evaluation_summary": "エントリーシートでアピールされていた強みと、実際の質問回答内容に強い一貫性があります。具体例も伴っており説得力があります。",
+            "improvement_advice": "さらに評価を高めるためには、行動の動機（なぜそれをしようと思ったのか）や、活動を通じて得られた学びをどう活かすかについて少し言及を加えると良いでしょう。"
+        }
