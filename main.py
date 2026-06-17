@@ -1,6 +1,10 @@
 import os
 import sys
 
+# 環境変数のAPIキーに改行などが含まれる場合のクレンジング
+if "GEMINI_API_KEY" in os.environ:
+    os.environ["GEMINI_API_KEY"] = os.environ["GEMINI_API_KEY"].strip()
+
 # Windows protobuf parsing fix for MediaPipe (reread / relaunch if not set at OS level)
 LAUNCH_WARNING = False
 if os.environ.get('PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION') != 'python':
@@ -512,8 +516,15 @@ def generate_tts(text: str, filename: str) -> bool:
 
 # Gemini API の呼び出し関数
 def call_gemini(system_instruction: str, prompt: str, api_key: str) -> str:
+    api_key_clean = api_key.strip() if api_key else ""
+    if not api_key_clean:
+        api_key_clean = os.environ.get("GEMINI_API_KEY", "").strip()
+        
+    if not api_key_clean:
+        raise RuntimeError("APIキーが設定されていません。")
+        
     try:
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=api_key_clean)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt,
@@ -524,7 +535,7 @@ def call_gemini(system_instruction: str, prompt: str, api_key: str) -> str:
         )
         return response.text
     except Exception as e:
-        raise RuntimeError(f"Gemini API 呼び出し中にエラーが発生しました: {e}")
+        raise RuntimeError(f"Gemini API 呼び出し中にエラーが発生しました: {e} (APIキーが有効であるか、ネットワーク接続を確認してください)")
 
 # 一時ファイルのクリーンアップ処理
 def cleanup_temp_files():
@@ -1192,6 +1203,9 @@ if st.session_state.step == "SETUP":
                         res_json = json.loads(response)
                         q1_text = res_json.get("question", "")
                     except Exception as e:
+                        import traceback
+                        error_trace = traceback.format_exc()
+                        log_gaze(f"[AI Q1 Error] Failed to generate question: {e}\n{error_trace}")
                         st.warning(f"AIでの質問生成に失敗したため、モックデータで代替します。({e})")
                         st.session_state.mode = "MOCK"
             
