@@ -348,8 +348,8 @@ def render_setup_view(avatar_path: str):
     
     with col_btn_left:
         if st.button("🚀 面接練習を開始する", use_container_width=True):
-            if not name_input.strip() or not final_academic_background.strip() or not st.session_state.job_type.strip():
-                st.warning("お名前、最終学歴、職種を入力してください。")
+            if not name_input.strip() or not st.session_state.job_type.strip():
+                st.warning("お名前、希望する職種を入力してください。")
             elif st.session_state.mode == "AI" and not st.session_state.api_key.strip():
                 st.error("AIモードで実行するには、APIキーを設定してください。")
             else:
