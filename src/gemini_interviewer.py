@@ -36,11 +36,11 @@ class GeminiInterviewer:
             
         try:
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.5-flash-lite",
                 contents="PING"
             )
             if response.text:
-                return True, f"接続成功! モデル (gemini-2.5-flash) が利用可能です。\n(応答例: {response.text.strip()[:60]}...)"
+                return True, f"接続成功! モデル (gemini-2.5-flash-lite) が利用可能です。\n(応答例: {response.text.strip()[:60]}...)"
             return False, "APIからの応答が空でした。"
         except Exception as e:
             error_msg = str(e)
@@ -153,7 +153,7 @@ class GeminiInterviewer:
         if not self.client:
             raise RuntimeError("APIクライアントが初期化されていません。")
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
