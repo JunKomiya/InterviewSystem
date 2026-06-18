@@ -2,10 +2,10 @@ import os
 import time
 import threading
 import streamlit as st
-from gemini_interviewer import GeminiInterviewer
-from database import save_interview_result
-from tts import generate_tts
-from utils import TEMP_DIR
+from src.gemini_interviewer import GeminiInterviewer
+from src.database import save_interview_result
+from src.tts import generate_tts
+from src.utils import TEMP_DIR
 
 def render_deep_dive_view(avatar_path: str):
     st.info("👁️ 視線トラッキング中：面接官（カメラ）を見ながら、回答文をタイピングしてください。")

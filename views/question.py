@@ -1,9 +1,9 @@
 import os
 import time
 import streamlit as st
-from gemini_interviewer import GeminiInterviewer
-from tts import generate_tts
-from utils import TEMP_DIR
+from src.gemini_interviewer import GeminiInterviewer
+from src.tts import generate_tts
+from src.utils import TEMP_DIR
 
 def render_question_view(avatar_path: str):
     st.info("👁️ 視線トラッキング中：面接中はカメラをまっすぐ見つめるよう意識してください。")

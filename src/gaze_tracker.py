@@ -4,7 +4,7 @@ import cv2
 import mediapipe as mp
 import threading
 import numpy as np
-from utils import log_gaze
+from src.utils import log_gaze
 
 # フェイシャル特徴量の解析ヘルパー関数
 def analyze_face_features(landmarks):

@@ -3,11 +3,11 @@ import time
 import cv2
 import mediapipe as mp
 import streamlit as st
-from gemini_interviewer import GeminiInterviewer
-from database import get_interview_history
-from tts import generate_tts
-from utils import TEMP_DIR, cleanup_temp_files
-from gaze_tracker import (
+from src.gemini_interviewer import GeminiInterviewer
+from src.database import get_interview_history
+from src.tts import generate_tts
+from src.utils import TEMP_DIR, cleanup_temp_files
+from src.gaze_tracker import (
     GazeRecorder,
     scan_available_cameras,
     analyze_face_features,

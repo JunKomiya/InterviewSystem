@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from session_manager import init_session, stop_recorder
+from src.session_manager import init_session, stop_recorder
 from views.start import render_start_view
 from views.setup import render_setup_view
 from views.question import render_question_view

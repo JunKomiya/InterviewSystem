@@ -1,6 +1,6 @@
 import streamlit as st
-from gaze_tracker import scan_available_cameras
-from utils import cleanup_temp_files
+from src.gaze_tracker import scan_available_cameras
+from src.utils import cleanup_temp_files
 
 def stop_recorder():
     """現在稼働中の GazeRecorder があれば安全に停止させます。"""
