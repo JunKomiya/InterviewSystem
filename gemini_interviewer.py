@@ -58,10 +58,14 @@ class GeminiInterviewer:
             return self._mock_first_question(es_data)
             
         system_instruction = (
-            "あなたは優秀な企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報と志望職種を読み、本番の面接と同じクオリティの最初の質問を1つ生成してください。\n"
-            "ES情報には、お名前、最終学歴、技術スキル、資格、経験した開発工程、およびその具体的な経験工程の内容が含まれています。\n"
-            "志望職種（特に技術職などの場合）や学生の経験工程・保有スキルに応じた具体的な内容を含めてください。\n"
-            "最初の質問では、まず自己紹介を促し、続いてESに書かれた強みや経歴・スキルについて簡潔に説明するように求めてください。\n\n"
+            "あなたは優秀な企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報と志望職種を読み、本番の面接の冒頭として最も自然で、リアルな最初の質問を1つ生成してください。\n\n"
+            "【面接官のペルソナ】\n"
+            "- 口調: 丁寧でプロフェッショナルですが、学生の緊張をほぐすような温かみのあるトーン（「〜ですね」「〜でしょうか？」など）。\n"
+            "- 振る舞い: ガチガチの定型文ではなく、人間の面接官が口頭で話すような自然なフレーズを意識してください。\n\n"
+            "【質問の生成ルール】\n"
+            "1. 最初に学生の名前を呼び、面接を始める挨拶（「本日はよろしくお願いします」など）を自然に含めてください。\n"
+            "2. ESの内容（技術スキルや経験工程）を質問文の中で過剰に説明（要約）しすぎず、あくまで学生自身に口から説明してもらうための呼び水となる質問にしてください。\n"
+            "3. 最初の質問では「簡単な自己紹介」と、それに続けて「今回アピールしたい自身の強みや経歴の概要」を簡潔に話すよう促してください。\n\n"
             "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
             "{\n"
             '    "question": "最初の質問文"\n'
@@ -77,26 +81,28 @@ class GeminiInterviewer:
             print(f"[GeminiInterviewer] Error in generate_first_question: {e}. Falling back to MOCK.")
             return self._mock_first_question(es_data)
 
-    def generate_deep_dive_question(self, es_data: dict, question_1: str, answer_1: str) -> tuple[str, str]:
-        """第一問の回答内容を深く掘り下げる深掘り質問と、回答へのリアクションを生成します。"""
+    def generate_deep_dive_question(self, es_data: dict, conversation_log: list) -> tuple[str, str]:
+        """対話ログとESデータを元に、次の深掘り質問とリアクションを生成します。"""
         if self.mode == "MOCK":
-            return self._mock_deep_dive_question(es_data, answer_1)
+            return self._mock_deep_dive_question(es_data, conversation_log)
             
         system_instruction = (
-            "あなたは企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、第一問の質問、およびそれに対する学生の回答を読み、回答内容を深く掘り下げる「深掘り質問」を1つ生成してください。\n"
-            "ES情報には、お名前、最終学歴、技術スキル、資格、経験した開発工程、およびその具体的な経験工程の内容が含まれています。\n"
-            "回答の中で曖昧な部分や、特に強調されている専門用語（例: 開発言語、手法、経験工程など）に焦点を当て、具体的にどのような行動をとったか、あるいはどのような困難を克服したかを聞いてください。\n"
-            "また、回答に対する面接官らしい一言リアクション（肯定・共感・技術や経験に対する興味）を添えてください。\n\n"
-            "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
+            "あなたは企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、および【これまでの対話ログ】を深く読み込み、文脈を完全に理解した上で、次の「深掘り質問」を1つ生成してください。\n\n"
+            "【面接官（ナナミ）の対話ルール】\n"
+            "- テンプレート感の排除: 毎回答に対して「素晴らしいですね」「ありがとうございます」と同じような褒め言葉から始めるのは絶対に避けてください。\n"
+            "- リアルな相槌: 学生の回答内容に応じて、「なるほど、〇〇という部分に注力されたのですね」「〇〇という技術を使われた背景が気になりました」など、相手の発言を自然に受け止める相槌（クッション言葉）にしてください。\n"
+            "- 深掘りの視点: 回答の曖昧な部分、専門用語、あるいは「なぜその行動をとったのか（動機）」「直面した困難とそれをどう乗り越えたか（再現性）」に焦点を当て、1回につき1つの明確な質問を投げかけてください。\n\n"
+            "【出力フォーマット】\n"
+            "システム側で制御するため、以下のJSONフォーマットのみで出力してください（他の余計な文は一切含めないでください）。\n"
+            "※「feedback_intro」と「question」をそのまま繋げて表示しても、1人の人間が自然に話している地続きの文章になるように記述してください。\n\n"
             "{\n"
-            '    "feedback_intro": "回答への一言リアクション・評価（1〜2文）",\n'
-            '    "question": "深掘り質問の文章"\n'
+            '    "feedback_intro": "学生の発言に対する自然な相槌・共感・興味の示し方（1〜2文。毎回答同じパターンにならないように）",\n'
+            '    "question": "文脈を踏まえた、次に投げるべき具体的な深掘り質問（1文）"\n'
             "}"
         )
         prompt = json.dumps({
             "es_data": es_data,
-            "question_1": question_1,
-            "answer_1": answer_1
+            "conversation_log": conversation_log
         }, ensure_ascii=False)
         
         try:
@@ -105,39 +111,34 @@ class GeminiInterviewer:
             return res_json.get("feedback_intro", ""), res_json.get("question", "")
         except Exception as e:
             print(f"[GeminiInterviewer] Error in generate_deep_dive_question: {e}. Falling back to MOCK.")
-            return self._mock_deep_dive_question(es_data, answer_1)
+            return self._mock_deep_dive_question(es_data, conversation_log)
 
-    def generate_evaluation_report(self, es_data: dict, question_1: str, answer_1: str, question_2: str, answer_2: str) -> dict:
+    def generate_evaluation_report(self, es_data: dict, conversation_log: list) -> dict:
         """面接の全対話ログを元に、総合的な面接の評価レポートを生成します。"""
         if self.mode == "MOCK":
             return self._mock_evaluation_report()
             
         system_instruction = (
-            "あなたは優秀なキャリアアドバイザー、および企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、および面接の対話ログを元に、総合的な面接の評価レポートを作成してください。\n"
-            "ES情報には、お名前、最終学歴、技術スキル、資格、経験した開発工程、およびその具体的な経験工程の内容が含まれています。\n\n"
-            "以下の項目について評価してください：\n"
-            "1. consistency_score (0〜100点): 回答の一貫性。ESの内容（技術スキルや学歴、経験工程）と実際の回答が矛盾なく繋がっているか。\n"
-            "2. content_quality_score (0〜100点): 回答の適切さ・具体性。エピソードの具体性や課題解決の深さ、職種・スキルへのマッチ度。\n\n"
-            "評価に基づき、総合スコア（0〜100点）と総合判定ランク（S, A, B, Cのいずれか）を決定してください。\n"
-            "また、全体の総評（会話の一貫性や強み・技術スキルがアピールできていた点へのフィードバック）と、今後の具体的な改善アドバイスを記述してください。\n\n"
+            "あなたは優秀なキャリアアドバイザー、および企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、および【面接のすべての対話ログ】を元に、客観的かつ愛のある総合評価レポートを作成してください。\n\n"
+            "【評価基準】\n"
+            "1. consistency_score (0〜100点): ESに記載された技術スキル・経験工程と、実際の面接での回答内容に矛盾がないか、一貫して軸が通っているかを評価します。\n"
+            "2. content_quality_score (0〜100点): エピソードの具体性。単に「やりました」だけでなく、「課題に対してどう考え、どう行動したか」がエンジニア（志望職種）として魅力的に伝わっているかを評価します。\n\n"
+            "【判定ルール】\n"
+            "- 総合スコア（overall_score）は上記2つのバランスを考慮して0〜100点で算出してください。\n"
+            "- ランク（rank）はスコアに応じて厳密に決定してください（S: 90以上, A: 80-89, B: 60-79, C: 59以下）。\n\n"
             "出力フォーマットは必ず以下のJSONフォーマットのみにしてください（他の余計な文は一切含めないでください）：\n"
             "{\n"
             '    "overall_score": 総合スコア（数値）,\n'
             '    "rank": "総合判定ランク（文字列：S、A、B、Cのいずれか）",\n'
             '    "consistency_score": 一貫性スコア（数値）,\n'
             '    "content_quality_score": 適切さスコア（数値）,\n'
-            '    "evaluation_summary": "面接官からの総評・フィードバック内容",\n'
-            '    "improvement_advice": "具体的な改善アドバイス内容"\n'
+            '    "evaluation_summary": "面接官ナナミからの総評。良かった点や、面接を通じて伝わってきた本人の強みを優しくフィードバックしてください。",\n'
+            '    "improvement_advice": "プロのキャリアアドバイザー視点での具体的な改善アドバイス。「次回から〇〇についてもっと具体的に話すとさらに良くなります」など、実践的な内容にしてください。"\n'
             "}"
         )
         prompt = json.dumps({
             "es_data": es_data,
-            "conversation_log": [
-                {"speaker": "interviewer", "text": question_1},
-                {"speaker": "student", "text": answer_1},
-                {"speaker": "interviewer", "text": question_2},
-                {"speaker": "student", "text": answer_2}
-            ]
+            "conversation_log": conversation_log
         }, ensure_ascii=False)
         
         try:
@@ -168,9 +169,13 @@ class GeminiInterviewer:
         tech_skills = es_data.get("tech_skills", "")
         return f"はじめまして、{name}さん。面接官のナナミです。本日はよろしくお願いいたします。それでは早速ですが、{job_type}の面接として自己紹介をお願いいたします。併せて、お持ちの技術スキルである「{tech_skills}」やこれまでの学習経験を含めてお話しください。"
 
-    def _mock_deep_dive_question(self, es_data: dict, answer_1: str) -> tuple[str, str]:
+    def _mock_deep_dive_question(self, es_data: dict, conversation_log: list) -> tuple[str, str]:
         tech_skills = es_data.get("tech_skills", "")
         selected_tech = tech_skills.split(",")[0] if tech_skills else "プログラミング"
+        # Extract student's answer safely
+        student_answers = [item["text"] for item in conversation_log if item.get("speaker") == "student"]
+        answer_1 = student_answers[-1] if student_answers else ""
+        
         feedback_intro = f"ご回答ありがとうございます。ご自身が学んでこられた「{selected_tech}」などの技術スキルを活かした取り組みについて、非常に興味深く伺いました。"
         deep_dive_txt = f"それでは、その中で特に「要件定義から実装」などの工程で、ご自身が最も困難だと感じた点と、それをどのように工夫して解決したかを教えていただけますか？"
         return feedback_intro, deep_dive_txt
