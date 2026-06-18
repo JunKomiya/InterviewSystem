@@ -44,11 +44,19 @@ class GeminiInterviewer:
             return False, "APIからの応答が空でした。"
         except Exception as e:
             error_msg = str(e)
+            try:
+                if self.client:
+                    models = self.client.models.list()
+                    model_names = [m.name for m in models]
+                    print(f"[DEBUG] Available models: {model_names}")
+            except Exception as le:
+                print(f"[DEBUG] Failed to list models: {le}")
+                
             if "503" in error_msg or "UNAVAILABLE" in error_msg:
                 return False, "ERROR 503: Gemini APIは現在一時的に高負荷なため、利用できません。時間をおいて再試行してください。"
             elif "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
                 return False, "ERROR 429: APIキーの利用制限（クォータ）を超過しました。無料枠の上限に達した可能性があります。"
-            elif "400" in error_msg or "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower():
+            elif "API_KEY_INVALID" in error_msg or "invalid" in error_msg.lower() and "key" in error_msg.lower():
                 return False, "ERROR 400: APIキーが無効であるか、形式が正しくありません。Google AI Studioのキーを正確に入力してください。"
             return False, f"接続エラーが発生しました: {error_msg}"
 
