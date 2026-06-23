@@ -24,7 +24,7 @@ def render_deep_dive_view(avatar_path: str):
             """, unsafe_allow_html=True)
         
         st.markdown('<h3>面接官 ナナミ</h3>', unsafe_allow_html=True)
-        st.markdown(f'<div class="status-badge" style="background:rgba(108, 92, 231, 0.15); color:#a29bfe; border: 1px solid rgba(108, 92, 231, 0.3);">💼 {st.session_state.job_type}面接</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="status-badge" style="background:rgba(129, 140, 248, 0.1); color:#4f46e5; border: 1px solid rgba(129, 140, 248, 0.25);">💼 {st.session_state.job_type}面接</div>', unsafe_allow_html=True)
         st.markdown('<div class="status-badge status-speaking">🔊 話しています</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -45,7 +45,7 @@ def render_deep_dive_view(avatar_path: str):
             st.audio(st.session_state.deep_dive_audio_path, format="audio/mp3", autoplay=True)
             st.markdown('</div>', unsafe_allow_html=True)
             
-        st.markdown("<hr style='border: 0.5px solid rgba(255,255,255,0.1)'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
         st.subheader("✍️ あなたの回答（深掘りに対する回答）")
         
         user_ans_2 = st.text_area(
@@ -62,7 +62,7 @@ def render_deep_dive_view(avatar_path: str):
                 st.session_state.user_answer_2 = user_ans_2.strip()
                 
                 # 視線トラッキングの停止とタイムラプス動画の出力
-                if "recorder" in st.session_state:
+                if "recorder" in st.session_state and st.session_state.recorder is not None:
                     with st.spinner("カメラをオフにし、結果の解析を行っています..."):
                         st.session_state.recorder.stop()
                         ts = int(time.time())
@@ -108,6 +108,11 @@ def render_deep_dive_view(avatar_path: str):
                         else:
                             st.session_state.eye_contact_score = 0
                             st.session_state.gaze_measurement_warning = True
+                else:
+                    st.session_state.eye_contact_score = 100
+                    st.session_state.gaze_measurement_warning = False
+                    st.session_state.gaze_video_path = ""
+                    st.session_state.gaze_map_path = ""
                 
                 # --- 総合評価生成 ---
                 if not st.session_state.get("interviewer"):
@@ -155,6 +160,9 @@ def render_deep_dive_view(avatar_path: str):
                     if success:
                         st.session_state.eval_audio_path = filename
                     
+                    use_camera_val = st.session_state.get("use_camera", True)
+                    use_camera_int = 1 if use_camera_val else 0
+
                     # データベースに詳細な結果を保存
                     save_interview_result(
                         user_name=st.session_state.name,
@@ -171,7 +179,8 @@ def render_deep_dive_view(avatar_path: str):
                         tech_skills=st.session_state.tech_skills,
                         qualifications=st.session_state.qualifications,
                         experienced_processes=", ".join(st.session_state.experienced_processes),
-                        experienced_processes_content=st.session_state.experienced_processes_content
+                        experienced_processes_content=st.session_state.experienced_processes_content,
+                        use_camera=use_camera_int
                     )
                     
                     st.session_state.step = "EVALUATION"

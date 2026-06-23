@@ -1,6 +1,7 @@
 import os
 import streamlit as st
-from session_manager import reset_session
+from src.session_manager import reset_session
+
 
 def render_evaluation_view(avatar_path: str):
     st.success("🎉 面接のすべてのステップが終了しました！評価レポートを表示します。")
@@ -20,15 +21,13 @@ def render_evaluation_view(avatar_path: str):
         </div>
         """, unsafe_allow_html=True)
         
-        # 評価基準進行バー
-        metrics = [
+        # 1. メイン評価の表示 (常に表示)
+        st.markdown("<div style='margin-top: 15px; margin-bottom: 5px; font-weight: bold; color: #4f46e5;'>🔑 メイン評価 (対話・内容)</div>", unsafe_allow_html=True)
+        main_metrics = [
             {"name": "回答の一貫性 (AI分析)", "val": st.session_state.consistency_score, "color": "linear-gradient(90deg, #ff9f43, #feca57)"},
-            {"name": "回答の適切さ (AI分析)", "val": st.session_state.content_quality_score, "color": "linear-gradient(90deg, #ff6b6b, #ff8787)"},
-            {"name": "視線の安定度 (実測データ)", "val": st.session_state.eye_contact_score, "color": "linear-gradient(90deg, #2e86de, #54a0ff)"},
-            {"name": "笑顔の割合 (表情検知モック)", "val": 85, "color": "linear-gradient(90deg, #10ac84, #1dd1a1)"}
+            {"name": "回答の適切さ (AI分析)", "val": st.session_state.content_quality_score, "color": "linear-gradient(90deg, #ff6b6b, #ff8787)"}
         ]
-        
-        for m in metrics:
+        for m in main_metrics:
             st.markdown(f"""
             <div class="metric-row">
                 <span class="metric-name">{m['name']}</span>
@@ -38,6 +37,31 @@ def render_evaluation_view(avatar_path: str):
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+        # 2. サブ評価の表示（オプション機能のON/OFFに連動）
+        use_camera = st.session_state.get("use_camera", True)
+        
+        # 将来的に音声認識などの別のオプションが追加された際にも拡張しやすいよう、論理和で判定
+        show_sub_section = use_camera  # 将来的には use_camera or use_audio などの拡張が可能
+        
+        if show_sub_section:
+            st.markdown("<div style='margin-top: 20px; margin-bottom: 5px; font-weight: bold; color: #0d9488;'>📹 サブ評価 (オプション機能)</div>", unsafe_allow_html=True)
+            sub_metrics = []
+            
+            if use_camera:
+                sub_metrics.append({"name": "視線の安定度 (実測データ)", "val": st.session_state.eye_contact_score, "color": "linear-gradient(90deg, #2e86de, #54a0ff)"})
+                sub_metrics.append({"name": "笑顔の割合 (表情検知モック)", "val": 85, "color": "linear-gradient(90deg, #10ac84, #1dd1a1)"})
+                
+            for m in sub_metrics:
+                st.markdown(f"""
+                <div class="metric-row">
+                    <span class="metric-name">{m['name']}</span>
+                    <span class="metric-val">{m['val']}%</span>
+                    <div class="metric-bar-bg">
+                        <div class="metric-bar-fill" style="width: {m['val']}%; background: {m['color']};"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
             
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -72,17 +96,17 @@ def render_evaluation_view(avatar_path: str):
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("<hr style='border: 0.5px solid rgba(255,255,255,0.1)'>", unsafe_allow_html=True)
+            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
             
             st.subheader("📝 本日の面接ログ")
             st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                <p style="color: #a0aec0; margin-bottom: 2px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
-                <p style="color: #e2e8f0; font-size: 1rem; border-left: 3px solid #6c5ce7; padding-left: 10px; margin-bottom: 20px;">
+            <div style="background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
+                <p style="color: #334155; margin-bottom: 2px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
+                <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #818cf8; padding-left: 10px; margin-bottom: 20px;">
                     {st.session_state.user_answer_1}
                 </p>
-                <p style="color: #a0aec0; margin-bottom: 2px;"><strong>【深掘り質問への回答】</strong></p>
-                <p style="color: #e2e8f0; font-size: 1rem; border-left: 3px solid #00cec9; padding-left: 10px;">
+                <p style="color: #334155; margin-bottom: 2px;"><strong>【深掘り質問への回答】</strong></p>
+                <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #4fd1c5; padding-left: 10px;">
                     {st.session_state.user_answer_2}
                 </p>
             </div>

@@ -60,8 +60,8 @@ elif st.session_state.step == "EVALUATION":
 
 # フッター
 st.markdown("""
-<br><hr style='border: 0.5px solid rgba(255,255,255,0.05)'>
-<div style="text-align: center; color: #718096; font-size: 0.85rem; padding-bottom: 20px;">
+<br><hr style='border: 0.5px solid rgba(0,0,0,0.08)'>
+<div style="text-align: center; color: #475569; font-size: 0.85rem; padding-bottom: 20px;">
     🤖 AI面接練習システム (視線トラッキング搭載プロトタイプ) | Designed with Streamlit & Gemini Pro
 </div>
 """, unsafe_allow_html=True)

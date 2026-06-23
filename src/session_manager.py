@@ -1,5 +1,4 @@
 import streamlit as st
-from src.gaze_tracker import scan_available_cameras
 from src.utils import cleanup_temp_files
 
 def stop_recorder():
@@ -14,6 +13,14 @@ def stop_recorder():
 def init_session():
     """アプリ起動時のセッション状態初期化ライフサイクルを行います。"""
     if "initialized" not in st.session_state:
+        # 他のセッションやF5リロード前の古いセッションで起動したままの GazeRecorder スレッドがあれば強制停止してカメラを解放
+        try:
+            from src.gaze_tracker import GazeRecorder
+            if GazeRecorder._active_instance and GazeRecorder._active_instance.is_recording:
+                GazeRecorder._active_instance.stop()
+        except Exception:
+            pass
+
         st.markdown("""
             <div class="loading-container">
                 <div class="loading-spinner"></div>
@@ -56,8 +63,8 @@ def init_session():
         st.session_state.h_range = (0.40, 0.60)
         st.session_state.v_range = (0.38, 0.62)
         
-        # 利用可能なカメラデバイスのスキャン（初回の重い処理）
-        st.session_state.available_cameras = scan_available_cameras()
+        # 利用可能なカメラデバイスのスキャンをオンデマンド化し、デフォルトで [0] を設定
+        st.session_state.available_cameras = [0]
         st.session_state.initialized = True
         st.rerun()
 

@@ -22,7 +22,7 @@ def render_question_view(avatar_path: str):
             """, unsafe_allow_html=True)
         
         st.markdown('<h3>面接官 ナナミ</h3>', unsafe_allow_html=True)
-        st.markdown(f'<div class="status-badge" style="background:rgba(108, 92, 231, 0.15); color:#a29bfe; border: 1px solid rgba(108, 92, 231, 0.3);">💼 {st.session_state.job_type}面接</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="status-badge" style="background:rgba(129, 140, 248, 0.1); color:#4f46e5; border: 1px solid rgba(129, 140, 248, 0.25);">💼 {st.session_state.job_type}面接</div>', unsafe_allow_html=True)
         st.markdown('<div class="status-badge status-speaking">🔊 話しています</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
         
@@ -43,7 +43,7 @@ def render_question_view(avatar_path: str):
             st.audio(st.session_state.audio_path, format="audio/mp3", autoplay=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
-        st.markdown("<hr style='border: 0.5px solid rgba(255,255,255,0.1)'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
         st.subheader("✍️ あなたの回答")
         
         user_ans = st.text_area(

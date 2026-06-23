@@ -427,3 +427,63 @@ def test_camera_capture(camera_index: int):
     except Exception as e:
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         return frame_rgb, f"WARNING: カメラ画像は取得できましたが、目線解析モデル(MediaPipe)の初期化中にエラーが発生しました ({e})。視線追跡はスキップされ、評価画面では固定値(78%)が表示されますが、面接自体は実施可能です。"
+
+def collect_calibration_sample(camera_index: int, duration: float = 2.0) -> tuple[float, float] | None:
+    """カメラから複数フレームの視線データを指定した秒数（duration）取得し、平均的な座標（X, Y）を算出します。"""
+    import cv2
+    import mediapipe as mp
+    import platform
+    import time
+    
+    if platform.system() == "Windows":
+        cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)
+    else:
+        cap = cv2.VideoCapture(camera_index)
+        
+    if not cap.isOpened():
+        return None
+        
+    mp_face_mesh = mp.solutions.face_mesh
+    gaze_xs = []
+    gaze_ys = []
+    
+    try:
+        with mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        ) as face_mesh:
+            
+            start_time = time.time()
+            # 指定された時間ループして有効なサンプルを集める
+            while (time.time() - start_time) < duration:
+                ret, frame = cap.read()
+                if not ret:
+                    time.sleep(0.05)
+                    continue
+                    
+                frame = cv2.flip(frame, 1)
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                results = face_mesh.process(rgb_frame)
+                
+                if results.multi_face_landmarks:
+                    landmarks = results.multi_face_landmarks[0].landmark
+                    gaze_x, gaze_y, ear, yaw, pitch, is_blink = analyze_face_features(landmarks)
+                    
+                    if not is_blink:
+                        # 補正済みの座標を算出
+                        gaze_x_compensated = gaze_x + 0.25 * yaw
+                        gaze_y_compensated = gaze_y + 0.25 * (pitch - 0.5)
+                        gaze_xs.append(gaze_x_compensated)
+                        gaze_ys.append(gaze_y_compensated)
+                
+                time.sleep(0.04)
+    finally:
+        cap.release()
+        
+    if len(gaze_xs) > 0:
+        avg_x = sum(gaze_xs) / len(gaze_xs)
+        avg_y = sum(gaze_ys) / len(gaze_ys)
+        return avg_x, avg_y
+    return None

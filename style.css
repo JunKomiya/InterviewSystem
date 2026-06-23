@@ -8,19 +8,19 @@
     width: 100%;
 }
 .loading-spinner {
-    border: 4px solid rgba(255, 255, 255, 0.05);
-    border-top: 4px solid #6c5ce7;
+    border: 4px solid rgba(0, 0, 0, 0.05);
+    border-top: 4px solid #818cf8;
     border-radius: 50%;
     width: 50px;
     height: 50px;
     animation: spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
     margin-bottom: 20px;
-    box-shadow: 0 0 25px rgba(108, 92, 231, 0.5);
+    box-shadow: 0 0 25px rgba(129, 140, 248, 0.3);
 }
 .loading-text {
     font-size: 1.6rem;
     font-weight: 700;
-    background: linear-gradient(90deg, #a29bfe, #6c5ce7, #00cec9);
+    background: linear-gradient(90deg, #a78bfa, #818cf8, #4fd1c5);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: 2px;
@@ -35,10 +35,10 @@
     50% { opacity: 1; }
 }
 
-/* アプリ全体のプレミアムダークモードスタイル */
+/* アプリ全体のプレミアムライトパステルスタイル */
 .stApp {
-    background: linear-gradient(135deg, #0e0b1e 0%, #141029 50%, #06030e 100%) !important;
-    color: #e2e8f0;
+    background: linear-gradient(135deg, #f7f9fc 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
+    color: #0f172a;
     font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
 }
 label, 
@@ -48,7 +48,7 @@ div[data-testid="stRadio"] label,
 div[data-testid="stRadio"] label p,
 div[data-testid="stCheckbox"] label,
 div[data-testid="stCheckbox"] label p {
-    color: #f1f5f9 !important;
+    color: #0f172a !important;
     font-weight: 500 !important;
 }
 .header-container {
@@ -57,7 +57,7 @@ div[data-testid="stCheckbox"] label p {
     margin-bottom: 20px;
 }
 .main-title {
-    background: linear-gradient(90deg, #6c5ce7, #a29bfe, #00cec9);
+    background: linear-gradient(90deg, #6366f1, #818cf8, #0d9488);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     font-size: 2.8rem;
@@ -65,27 +65,27 @@ div[data-testid="stCheckbox"] label p {
     margin-bottom: 5px;
 }
 .sub-title {
-    color: #a0aec0;
+    color: #334155;
     font-size: 1.1rem;
     font-weight: 400;
 }
 .glass-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 20px;
     padding: 30px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 20px 40px rgba(148, 163, 184, 0.12);
     margin-bottom: 25px;
 }
 .interviewer-panel {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 20px;
     padding: 25px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08);
 }
 .avatar-wrapper {
     margin: 0 auto 20px auto;
@@ -95,8 +95,8 @@ div[data-testid="stCheckbox"] label p {
 }
 .avatar-img {
     border-radius: 50%;
-    border: 4px solid #6c5ce7;
-    box-shadow: 0 0 25px rgba(108, 92, 231, 0.6);
+    border: 4px solid #818cf8;
+    box-shadow: 0 0 25px rgba(129, 140, 248, 0.35);
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -105,11 +105,11 @@ div[data-testid="stCheckbox"] label p {
 @keyframes subtlePulse {
     0% {
         transform: scale(1.0);
-        box-shadow: 0 0 20px rgba(108, 92, 231, 0.5);
+        box-shadow: 0 0 20px rgba(129, 140, 248, 0.3);
     }
     100% {
         transform: scale(1.03);
-        box-shadow: 0 0 35px rgba(108, 92, 231, 0.8), 0 0 15px rgba(0, 206, 201, 0.4);
+        box-shadow: 0 0 35px rgba(129, 140, 248, 0.5), 0 0 15px rgba(79, 209, 197, 0.3);
     }
 }
 .status-badge {
@@ -122,14 +122,14 @@ div[data-testid="stCheckbox"] label p {
     margin-top: 10px;
 }
 .status-speaking {
-    background: rgba(235, 77, 75, 0.15);
+    background: rgba(255, 118, 117, 0.12);
     color: #ff7675;
-    border: 1px solid rgba(235, 77, 75, 0.3);
+    border: 1px solid rgba(255, 118, 117, 0.25);
 }
 .status-listening {
-    background: rgba(9, 132, 227, 0.15);
-    color: #74b9ff;
-    border: 1px solid rgba(9, 132, 227, 0.3);
+    background: rgba(9, 132, 227, 0.08);
+    color: #0984e3;
+    border: 1px solid rgba(9, 132, 227, 0.2);
 }
 .chat-bubble {
     padding: 20px;
@@ -137,23 +137,24 @@ div[data-testid="stCheckbox"] label p {
     margin-bottom: 20px;
     font-size: 1.05rem;
     line-height: 1.6;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 5px 15px rgba(148, 163, 184, 0.08);
+    color: #0f172a;
 }
 .interviewer-bubble {
-    background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(108, 92, 231, 0.03) 100%);
-    border-left: 5px solid #6c5ce7;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.08) 0%, rgba(129, 140, 248, 0.02) 100%);
+    border-left: 5px solid #818cf8;
     border-top-left-radius: 4px;
 }
 .audio-container {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.4);
     border-radius: 10px;
     padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     margin-top: 10px;
     margin-bottom: 15px;
 }
 .stButton>button {
-    background: linear-gradient(90deg, #6c5ce7 0%, #00cec9 100%);
+    background: linear-gradient(90deg, #6366f1 0%, #0d9488 100%);
     color: #ffffff;
     font-weight: 700;
     border: none;
@@ -161,12 +162,12 @@ div[data-testid="stCheckbox"] label p {
     padding: 12px 28px;
     font-size: 1rem;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
     width: 100%;
 }
 .stButton>button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(108, 92, 231, 0.6), 0 0 15px rgba(0, 206, 201, 0.4);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4), 0 0 15px rgba(79, 209, 197, 0.3);
     color: #ffffff;
 }
 .stButton>button:active {
@@ -174,14 +175,14 @@ div[data-testid="stCheckbox"] label p {
 }
 .reset-btn>div>button {
     background: transparent;
-    color: #a0aec0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #64748b;
+    border: 1px solid rgba(0, 0, 0, 0.15);
     box-shadow: none;
 }
 .reset-btn>div>button:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.03);
+    color: #1e293b;
+    border: 1px solid rgba(0, 0, 0, 0.3);
     box-shadow: none;
 }
 .rank-container {
@@ -199,18 +200,18 @@ div[data-testid="stCheckbox"] label p {
     color: white;
     font-size: 3.5rem;
     font-weight: 900;
-    box-shadow: 0 0 35px rgba(121, 40, 202, 0.7);
+    box-shadow: 0 0 25px rgba(121, 40, 202, 0.4);
     margin: 10px auto;
-    border: 4px solid rgba(255, 255, 255, 0.25);
+    border: 4px solid rgba(255, 255, 255, 0.5);
     animation: glowPulse 2s infinite alternate;
 }
 @keyframes glowPulse {
-    0% { box-shadow: 0 0 25px rgba(121, 40, 202, 0.6); }
-    100% { box-shadow: 0 0 45px rgba(255, 0, 127, 0.8), 0 0 25px rgba(121, 40, 202, 0.6); }
+    0% { box-shadow: 0 0 15px rgba(121, 40, 202, 0.3); }
+    100% { box-shadow: 0 0 30px rgba(255, 0, 127, 0.5), 0 0 15px rgba(121, 40, 202, 0.3); }
 }
 .rank-label {
     font-size: 1rem;
-    color: #cbd5e1;
+    color: #1e293b;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -221,31 +222,109 @@ div[data-testid="stCheckbox"] label p {
 .metric-name {
     font-weight: 600;
     font-size: 1rem;
-    color: #94a3b8;
+    color: #334155;
 }
 .metric-val {
     float: right;
     font-weight: 700;
-    color: #00cec9;
+    color: #0d9488;
     font-size: 1.1rem;
 }
 .metric-bar-bg {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.05);
     height: 12px;
     border-radius: 6px;
     margin-top: 8px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.02);
 }
 .metric-bar-fill {
     height: 100%;
     border-radius: 6px;
 }
 .tracking-title {
-    color: #00cec9;
+    color: #0d9488;
     font-weight: 700;
-    border-left: 4px solid #00cec9;
+    border-left: 4px solid #0d9488;
     padding-left: 10px;
     margin-bottom: 20px;
     margin-top: 10px;
+}
+
+/* キャリブレーションターゲット用スタイル */
+.calib-container {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 30px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.05);
+    position: relative;
+    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+.calib-target-wrapper {
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    position: relative;
+}
+.calib-target-center {
+    width: 40px;
+    height: 40px;
+    background-color: #0d9488; /* Emerald green */
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+    animation: targetPulseCenter 1.5s infinite ease-in-out;
+}
+@keyframes targetPulseCenter {
+    0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 20px rgba(13, 148, 136, 0);
+    }
+    100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(13, 148, 136, 0);
+    }
+}
+.calib-target-away {
+    position: absolute;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #ff7675; /* Soft red */
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.7);
+    animation: targetPulseAway 1.5s infinite ease-in-out;
+}
+@keyframes targetPulseAway {
+    0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(255, 118, 117, 0.7);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 20px rgba(255, 118, 117, 0);
+    }
+    100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(255, 118, 117, 0);
+    }
+}
+.calib-step-indicator {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 10px;
 }
