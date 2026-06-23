@@ -669,7 +669,7 @@ def render_setup_view(avatar_path: str):
         st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
         if "show_options" not in st.session_state:
             st.session_state.show_options = False
-        if st.button("📹 カメラ・視線判定オプションを開く", use_container_width=True, key="setup_open_options_btn"):
+        if st.button("⚙️ 環境設定・オプションを開く", use_container_width=True, key="setup_open_options_btn"):
             st.session_state.show_options = True
             st.rerun()
             
