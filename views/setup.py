@@ -91,6 +91,10 @@ def show_options_modal():
             width=0
         )
         
+        st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 10px 0;'>", unsafe_allow_html=True)
+        st.toggle("音声認識を利用する (リアルタイム文字起こしと回答分析)", value=False, disabled=True, help="今後のアップデートで追加予定の機能です。")
+        st.caption("※ 現在はご利用いただけません。 (将来の拡張用)")
+        
     st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
     
     st.markdown("### 👁️ 視線・表情検知の設定")
@@ -623,12 +627,7 @@ def show_options_modal():
                         cap.release()
                         frame_placeholder.empty()
 
-    # 将来的な拡張機能（音声認識など）のプレースホルダー
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 🎙️ 音声・対話設定 (将来の拡張用)")
-    with st.container(border=True):
-        st.toggle("音声認識を利用する (リアルタイム文字起こしと回答分析)", value=False, disabled=True, help="今後のアップデートで追加予定の機能です。")
-        st.caption("※ 現在はご利用いただけません。")
+
 
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("設定を閉じる", use_container_width=True, key="dialog_close_btn"):
