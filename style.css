@@ -328,3 +328,35 @@ div[data-testid="stCheckbox"] label p {
     font-weight: 600;
     margin-bottom: 10px;
 }
+
+/* Streamlit tabs styling for better contrast against pastel background */
+div[data-testid="stTabs"] button[data-baseweb="tab"] div,
+div[data-testid="stTabs"] button[data-baseweb="tab"] span,
+div[data-testid="stTabs"] button[data-baseweb="tab"] p,
+div[data-testid="stTabs"] button[data-baseweb="tab"] {
+    color: #334155 !important; /* Non-active tab text color - dark slate */
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease;
+}
+
+div[data-testid="stTabs"] button[data-baseweb="tab"]:hover div,
+div[data-testid="stTabs"] button[data-baseweb="tab"]:hover span,
+div[data-testid="stTabs"] button[data-baseweb="tab"]:hover p,
+div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+    color: #0f172a !important;
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] div,
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] span,
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+    color: #4f46e5 !important; /* Active tab text color - vibrant Indigo */
+    font-weight: 700 !important;
+}
+
+/* Tab indicator highlight bar styling */
+div[data-testid="stTabs"] div[data-baseweb="tab-highlight-bar"] {
+    background-color: #4f46e5 !important;
+}
