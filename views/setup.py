@@ -21,6 +21,78 @@ def on_options_dismiss():
 def show_options_modal():
     st.markdown("システムの動作環境（デバイス、各種機能のオン/オフおよびパラメータ）を調整します。")
     
+    st.markdown("### 🔊 サウンド設定 (スピーカーの選択)")
+    with st.container(border=True):
+        try:
+            import sounddevice as sd
+            devices = sd.query_devices()
+            speaker_options = []
+            for d in devices:
+                if d.get('max_output_channels', 0) > 0:
+                    name = d.get('name', 'Unknown Device')
+                    if isinstance(name, bytes):
+                        name = name.decode('utf-8', errors='ignore')
+                    speaker_options.append(name)
+            speaker_options = list(dict.fromkeys(speaker_options))
+        except Exception:
+            speaker_options = ["既定のスピーカー (システム設定に従う)"]
+            
+        if not speaker_options:
+            speaker_options = ["既定のスピーカー (システム設定に従う)"]
+            
+        if "selected_speaker" not in st.session_state:
+            st.session_state.selected_speaker = speaker_options[0]
+        elif st.session_state.selected_speaker not in speaker_options:
+            st.session_state.selected_speaker = speaker_options[0]
+            
+        selected_speaker = st.selectbox(
+            "音声の再生に使用するスピーカーを選択してください",
+            options=speaker_options,
+            index=speaker_options.index(st.session_state.selected_speaker),
+            key="speaker_selectbox"
+        )
+        st.session_state.selected_speaker = selected_speaker
+        
+        # Inject JavaScript to set the sink ID of all audio elements in the browser
+        safe_speaker = selected_speaker.replace("'", "\\'")
+        st.components.v1.html(
+            f"""
+            <script>
+            const selectedLabel = '{safe_speaker}';
+            
+            function updateSinkId() {{
+                if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+                navigator.mediaDevices.enumerateDevices().then(devices => {{
+                    const audiooutput = devices.filter(d => d.kind === 'audiooutput');
+                    let targetDevice = audiooutput.find(d => d.label === selectedLabel);
+                    if (!targetDevice) {{
+                        targetDevice = audiooutput.find(d => d.label.includes(selectedLabel) || selectedLabel.includes(d.label));
+                    }}
+                    
+                    if (targetDevice) {{
+                        const parentDoc = window.parent.document;
+                        const audios = parentDoc.querySelectorAll('audio');
+                        audios.forEach(audio => {{
+                            if (audio.setSinkId && audio.sinkId !== targetDevice.deviceId) {{
+                                audio.setSinkId(targetDevice.deviceId)
+                                    .then(() => console.log('Audio output successfully routed to:', targetDevice.label))
+                                    .catch(err => console.error('setSinkId error:', err));
+                            }}
+                        }});
+                    }}
+                }});
+            }}
+            
+            updateSinkId();
+            setInterval(updateSinkId, 1000);
+            </script>
+            """,
+            height=0,
+            width=0
+        )
+        
+    st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
+    
     st.markdown("### 👁️ 視線・表情検知の設定")
     
     # 「カメラを利用する」トグル
