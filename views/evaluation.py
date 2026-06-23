@@ -88,24 +88,24 @@ def render_evaluation_view(avatar_path: str):
         tab1, tab2 = st.tabs(["💡 総合指導 & ログ", "👁️ 視線トラッキング分析 (タイムラプス)"])
         
         with tab1:
-            st.markdown('<div class="glass-card" style="margin-top:15px; border:none; padding:10px; background:transparent;">', unsafe_allow_html=True)
-            st.subheader("💡 面接官ナナミからの総評 ＆ 改善指導")
+            st.markdown('<div class="glass-card" style="margin-top:15px; padding:25px; background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08); border-radius: 20px;">', unsafe_allow_html=True)
+            st.markdown('<h3 style="color: #0f172a; font-size: 1.35rem; font-weight: 700; margin-bottom: 15px;">💡 面接官ナナミからの総評 ＆ 改善指導</h3>', unsafe_allow_html=True)
             st.markdown(f"""
-            <div class="chat-bubble interviewer-bubble" style="white-space: pre-line; font-size: 1.05rem; border-left-color: #ff007f;">
+            <div class="chat-bubble interviewer-bubble" style="white-space: pre-line; font-size: 1.05rem; border-left-color: #ff007f; color: #0f172a; background: rgba(255, 255, 255, 0.6);">
                 {st.session_state.eval_text}
             </div>
             """, unsafe_allow_html=True)
             
-            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
+            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 20px 0;'>", unsafe_allow_html=True)
             
-            st.subheader("📝 本日の面接ログ")
+            st.markdown('<h3 style="color: #0f172a; font-size: 1.35rem; font-weight: 700; margin-bottom: 15px;">📝 本日の面接ログ</h3>', unsafe_allow_html=True)
             st.markdown(f"""
-            <div style="background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
-                <p style="color: #334155; margin-bottom: 2px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
+            <div style="background: rgba(255, 255, 255, 0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
+                <p style="color: #1e293b; margin-bottom: 4px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
                 <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #818cf8; padding-left: 10px; margin-bottom: 20px;">
                     {st.session_state.user_answer_1}
                 </p>
-                <p style="color: #334155; margin-bottom: 2px;"><strong>【深掘り質問への回答】</strong></p>
+                <p style="color: #1e293b; margin-bottom: 4px;"><strong>【深掘り質問への回答】</strong></p>
                 <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #4fd1c5; padding-left: 10px;">
                     {st.session_state.user_answer_2}
                 </p>
@@ -114,14 +114,14 @@ def render_evaluation_view(avatar_path: str):
             st.markdown('</div>', unsafe_allow_html=True)
             
         with tab2:
-            st.markdown('<div class="glass-card" style="margin-top:15px; border:none; padding:10px; background:transparent;">', unsafe_allow_html=True)
-            st.markdown('<h3 class="tracking-title">👁️ 視線トラッキング分析タイムラプス</h3>', unsafe_allow_html=True)
-            st.write("面接中にカメラから取得した目線の動きを分析した結果です。")
+            st.markdown('<div class="glass-card" style="margin-top:15px; padding:25px; background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08); border-radius: 20px;">', unsafe_allow_html=True)
+            st.markdown('<h3 class="tracking-title" style="color: #0d9488; font-size: 1.35rem; font-weight: 700; border-left: 4px solid #0d9488; padding-left: 10px; margin-bottom: 15px;">👁️ 視線トラッキング分析タイムラプス</h3>', unsafe_allow_html=True)
+            st.markdown('<p style="color: #1e293b; font-size: 1rem; margin-bottom: 20px;">面接中にカメラから取得した目線の動きを分析した結果です。</p>', unsafe_allow_html=True)
             
             col_v, col_m = st.columns([1, 1], gap="medium")
             
             with col_v:
-                st.markdown("##### 🎥 視線タイムラプス動画")
+                st.markdown('<h5 style="color: #0f172a; font-weight: 700; margin-top: 10px; margin-bottom: 8px;">🎥 視線タイムラプス動画</h5>', unsafe_allow_html=True)
                 thread = st.session_state.get("gaze_video_thread")
                 if thread and thread.is_alive():
                     with st.spinner("タイムラプス動画を生成中..."):
@@ -131,15 +131,15 @@ def render_evaluation_view(avatar_path: str):
                     st.info("🎥 動画ファイルをエンコード中です。しばらくしてからタブを切り替えるか、ブラウザをリロードしてください。")
                 elif st.session_state.gaze_video_path and os.path.exists(st.session_state.gaze_video_path):
                     st.video(st.session_state.gaze_video_path, autoplay=True, loop=True)
-                    st.caption("録画された顔の映像に「緑の虹彩マーク」と右上「視線プロットレーダー」が描画されたタイムラプスです。")
+                    st.markdown('<p style="color: #475569; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">録画された顔の映像に「緑の虹彩マーク」と右上「視線プロットレーダー」が描画されたタイムラプスです。</p>', unsafe_allow_html=True)
                 else:
                     st.info("カメラが有効でなかったか、動画の書き込みに失敗したため、動画はありません。")
                     
             with col_m:
-                st.markdown("##### 📍 視線移動トレイルマップ")
+                st.markdown('<h5 style="color: #0f172a; font-weight: 700; margin-top: 10px; margin-bottom: 8px;">📍 視線移動トレイルマップ</h5>', unsafe_allow_html=True)
                 if st.session_state.gaze_map_path and os.path.exists(st.session_state.gaze_map_path):
                     st.image(st.session_state.gaze_map_path, use_container_width=True)
-                    st.caption("面接開始から終了までの、目線座標の推移を描いたプロットです。線は時間の経過とともに色が変化（パープル側が最新）します。")
+                    st.markdown('<p style="color: #475569; font-size: 0.85rem; margin-top: 6px; line-height: 1.4;">面接開始から終了までの、目線座標の推移を描いたプロットです。線は時間の経過とともに色が変化（パープル側が最新）します。</p>', unsafe_allow_html=True)
                 else:
                     st.info("トラッキングデータがないため、マップ画像はありません。")
             
