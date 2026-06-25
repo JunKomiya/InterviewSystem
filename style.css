@@ -153,6 +153,18 @@ div[data-testid="stCheckbox"] label p {
     margin-top: 10px;
     margin-bottom: 15px;
 }
+.audio-container audio {
+    pointer-events: none;
+}
+.audio-container audio::-webkit-media-controls-timeline {
+    display: none !important;
+}
+.audio-container audio::-webkit-media-controls-current-time-display {
+    display: none !important;
+}
+.audio-container audio::-webkit-media-controls-time-remaining-display {
+    display: none !important;
+}
 .stButton>button {
     background: linear-gradient(90deg, #6366f1 0%, #0d9488 100%);
     color: #ffffff;
