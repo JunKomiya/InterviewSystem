@@ -98,9 +98,8 @@ def render_evaluation_view(avatar_path: str):
         st.markdown('<h3>面接官 ナナミ</h3>', unsafe_allow_html=True)
         
         if st.session_state.eval_audio_path and os.path.exists(st.session_state.eval_audio_path):
-            st.markdown('<div class="audio-container">', unsafe_allow_html=True)
-            st.audio(st.session_state.eval_audio_path, format="audio/mp3", autoplay=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            from src.tts import play_audio_background
+            play_audio_background(st.session_state.eval_audio_path)
         st.markdown('</div>', unsafe_allow_html=True)
         
     with col_r:

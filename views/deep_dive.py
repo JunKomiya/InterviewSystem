@@ -41,9 +41,8 @@ def render_deep_dive_view(avatar_path: str):
         
         # 音声再生
         if st.session_state.deep_dive_audio_path and os.path.exists(st.session_state.deep_dive_audio_path):
-            st.markdown('<div class="audio-container">', unsafe_allow_html=True)
-            st.audio(st.session_state.deep_dive_audio_path, format="audio/mp3", autoplay=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            from src.tts import play_audio_background
+            play_audio_background(st.session_state.deep_dive_audio_path)
             
         st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
         st.subheader("✍️ あなたの回答（深掘りに対する回答）")

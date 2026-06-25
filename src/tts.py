@@ -23,6 +23,24 @@ def generate_tts(text: str, filename: str, voice: str = VOICE) -> bool:
         print(f"音声生成エラー: {e}")
         return False
 
+def play_audio_background(audio_path: str):
+    """音声ファイルを非表示で自動再生します。"""
+    import base64
+    import streamlit as st
+    if audio_path and os.path.exists(audio_path):
+        try:
+            with open(audio_path, "rb") as f:
+                audio_bytes = f.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+            audio_html = f"""
+                <audio autoplay style="display:none;">
+                    <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                </audio>
+            """
+            st.components.v1.html(audio_html, height=0, width=0)
+        except Exception as e:
+            print(f"音声再生エラー: {e}")
+
 if __name__ == "__main__":
     # 既存の動作確認用のメイン処理を維持
     TEXT = "こんにちは。面接練習システムへようこそ。本日はよろしくお願いいたします。"
