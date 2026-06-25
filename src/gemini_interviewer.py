@@ -62,8 +62,12 @@ class GeminiInterviewer:
 
     def generate_first_question(self, es_data: dict) -> str:
         """エントリーシート(ES)情報を分析し、最初の質問を生成します。"""
+        real_name = es_data.get("name", "").strip()
+        masked_es_data, _ = self._mask_data(es_data)
+        
         if self.mode == "MOCK":
-            return self._mock_first_question(es_data)
+            res = self._mock_first_question(masked_es_data)
+            return self._unmask_data(res, real_name)
             
         system_instruction = (
             "あなたは優秀な企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報と志望職種を読み、本番の面接の冒頭として最も自然で、リアルな最初の質問を1つ生成してください。\n\n"
@@ -79,20 +83,26 @@ class GeminiInterviewer:
             '    "question": "最初の質問文"\n'
             "}"
         )
-        prompt = json.dumps(es_data, ensure_ascii=False)
+        prompt = json.dumps(masked_es_data, ensure_ascii=False)
         
         try:
             response_text = self._call_api(system_instruction, prompt)
             res_json = json.loads(response_text)
-            return res_json.get("question", "")
+            question = res_json.get("question", "")
+            return self._unmask_data(question, real_name)
         except Exception as e:
             print(f"[GeminiInterviewer] Error in generate_first_question: {e}. Falling back to MOCK.")
-            return self._mock_first_question(es_data)
+            res = self._mock_first_question(masked_es_data)
+            return self._unmask_data(res, real_name)
 
     def generate_deep_dive_question(self, es_data: dict, conversation_log: list) -> tuple[str, str]:
         """対話ログとESデータを元に、次の深掘り質問とリアクションを生成します。"""
+        real_name = es_data.get("name", "").strip()
+        masked_es_data, masked_log = self._mask_data(es_data, conversation_log)
+        
         if self.mode == "MOCK":
-            return self._mock_deep_dive_question(es_data, conversation_log)
+            intro, q = self._mock_deep_dive_question(masked_es_data, masked_log)
+            return self._unmask_data(intro, real_name), self._unmask_data(q, real_name)
             
         system_instruction = (
             "あなたは企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、および【これまでの対話ログ】を深く読み込み、文脈を完全に理解した上で、次の「深掘り質問」を1つ生成してください。\n\n"
@@ -109,28 +119,36 @@ class GeminiInterviewer:
             "}"
         )
         prompt = json.dumps({
-            "es_data": es_data,
-            "conversation_log": conversation_log
+            "es_data": masked_es_data,
+            "conversation_log": masked_log
         }, ensure_ascii=False)
         
         try:
             response_text = self._call_api(system_instruction, prompt)
             res_json = json.loads(response_text)
-            return res_json.get("feedback_intro", ""), res_json.get("question", "")
+            intro = res_json.get("feedback_intro", "")
+            q = res_json.get("question", "")
+            return self._unmask_data(intro, real_name), self._unmask_data(q, real_name)
         except Exception as e:
             print(f"[GeminiInterviewer] Error in generate_deep_dive_question: {e}. Falling back to MOCK.")
-            return self._mock_deep_dive_question(es_data, conversation_log)
+            intro, q = self._mock_deep_dive_question(masked_es_data, masked_log)
+            return self._unmask_data(intro, real_name), self._unmask_data(q, real_name)
 
     def generate_evaluation_report(self, es_data: dict, conversation_log: list) -> dict:
         """面接の全対話ログを元に、総合的な面接の評価レポートを生成します。"""
+        real_name = es_data.get("name", "").strip()
+        masked_es_data, masked_log = self._mask_data(es_data, conversation_log)
+        
         if self.mode == "MOCK":
-            return self._mock_evaluation_report()
+            res_dict = self._mock_evaluation_report(conversation_log)
+            return self._unmask_data(res_dict, real_name)
             
         system_instruction = (
             "あなたは優秀なキャリアアドバイザー、および企業の採用面接官（名前：ナナミ）です。学生のエントリーシート（ES）情報、および【面接のすべての対話ログ】を元に、客観的かつ愛のある総合評価レポートを作成してください。\n\n"
             "【評価基準】\n"
             "1. consistency_score (0〜100点): ESに記載された技術スキル・経験工程と、実際の面接での回答内容に矛盾がないか、一貫して軸が通っているかを評価します。\n"
-            "2. content_quality_score (0〜100点): エピソードの具体性。単に「やりました」だけでなく、「課題に対してどう考え、どう行動したか」がエンジニア（志望職種）として魅力的に伝わっているかを評価します。\n\n"
+            "2. content_quality_score (0〜100点): エピソードの具体性。単に「やりました」だけでなく、「課題に対してどう考え、どう行動したか」がエンジニア（志望職種）として魅力的に伝わっているかを評価します。\n"
+            "   - 【重要】回答の長さが極端に短い場合（目安として1回の回答が概ね50文字未満、または一言・二言だけの不十分な回答など）、どれほどESの内容と一貫していても、具体性が著しく不足していると判断し、content_quality_score を大幅に減点（最大で40点以下）してください。さらに、改善アドバイスにおいて「回答が短すぎるため、より詳細にアピールするように」という旨を優しく指摘してください。\n\n"
             "【判定ルール】\n"
             "- 総合スコア（overall_score）は上記2つのバランスを考慮して0〜100点で算出してください。\n"
             "- ランク（rank）はスコアに応じて厳密に決定してください（S: 90以上, A: 80-89, B: 60-79, C: 59以下）。\n\n"
@@ -145,16 +163,18 @@ class GeminiInterviewer:
             "}"
         )
         prompt = json.dumps({
-            "es_data": es_data,
-            "conversation_log": conversation_log
+            "es_data": masked_es_data,
+            "conversation_log": masked_log
         }, ensure_ascii=False)
         
         try:
             response_text = self._call_api(system_instruction, prompt)
-            return json.loads(response_text)
+            res_dict = json.loads(response_text)
+            return self._unmask_data(res_dict, real_name)
         except Exception as e:
             print(f"[GeminiInterviewer] Error in generate_evaluation_report: {e}. Falling back to MOCK.")
-            return self._mock_evaluation_report()
+            res_dict = self._mock_evaluation_report(conversation_log)
+            return self._unmask_data(res_dict, real_name)
 
     def _call_api(self, system_instruction: str, prompt: str) -> str:
         """API呼び出しと例外処理の内部共通メソッド。"""
@@ -169,6 +189,36 @@ class GeminiInterviewer:
             )
         )
         return response.text
+
+    def _mask_data(self, es_data: dict, conversation_log: list = None) -> tuple[dict, list]:
+        """送信データの個人情報（名前）をプレースホルダーにマスクします。"""
+        real_name = es_data.get("name", "").strip()
+        masked_es_data = es_data.copy()
+        if real_name:
+            masked_es_data["name"] = "__CANDIDATE_NAME__"
+            
+        if conversation_log is None:
+            return masked_es_data, []
+            
+        masked_log = []
+        for turn in conversation_log:
+            masked_turn = turn.copy()
+            if real_name and "text" in masked_turn and isinstance(masked_turn["text"], str):
+                masked_turn["text"] = masked_turn["text"].replace(real_name, "__CANDIDATE_NAME__")
+            masked_log.append(masked_turn)
+        return masked_es_data, masked_log
+
+    def _unmask_data(self, data: any, real_name: str) -> any:
+        """APIからのレスポンスデータに含まれる仮名を実名に戻します（再帰的処理）"""
+        if not real_name:
+            return data
+        if isinstance(data, str):
+            return data.replace("__CANDIDATE_NAME__", real_name)
+        elif isinstance(data, dict):
+            return {k: self._unmask_data(v, real_name) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._unmask_data(item, real_name) for item in data]
+        return data
 
     # --- モックフォールバック用内部メソッド ---
     def _mock_first_question(self, es_data: dict) -> str:
@@ -188,12 +238,42 @@ class GeminiInterviewer:
         deep_dive_txt = f"それでは、その中で特に「要件定義から実装」などの工程で、ご自身が最も困難だと感じた点と、それをどのように工夫して解決したかを教えていただけますか？"
         return feedback_intro, deep_dive_txt
 
-    def _mock_evaluation_report(self) -> dict:
+    def _mock_evaluation_report(self, conversation_log: list = None) -> dict:
+        # デフォルトの優秀な評価
+        overall_score = 90
+        rank = "A"
+        consistency_score = 92
+        content_quality_score = 88
+        summary = "エントリーシートでアピールされていた強みと、実際の質問回答内容に強い一貫性があります。具体例も伴っており説得力があります。"
+        advice = "さらに評価を高めるためには、行動の動機（なぜそれをしようと思ったのか）や、活動を通じて得られた学びをどう活かすかについて少し言及を加えると良いでしょう。"
+
+        # 実際の会話ログから回答の長さを判定
+        if conversation_log:
+            student_answers = [item["text"] for item in conversation_log if item.get("speaker") == "student"]
+            short_answers = [ans for ans in student_answers if len(ans.strip()) < 50]
+            if short_answers:
+                content_quality_score = 35
+                consistency_score = min(consistency_score, 70)  # 回答が短すぎるため一貫性の評価もやや下げる
+                overall_score = int((consistency_score + content_quality_score) / 2)
+                
+                # ランク再計算
+                if overall_score >= 90:
+                    rank = "S"
+                elif overall_score >= 80:
+                    rank = "A"
+                elif overall_score >= 60:
+                    rank = "B"
+                else:
+                    rank = "C"
+                
+                summary = "回答内容にESとの明らかな矛盾は見られませんが、回答文が非常に短く、アピールとしての具体性に欠けています。"
+                advice = "自己紹介や深掘り質問に対する回答が短すぎます（目安として各回答50文字以上）。面接官にあなたの魅力や経験がしっかりと伝わるよう、具体的な取り組みや課題へのアプローチをもっと詳しく説明するようにしてください。"
+
         return {
-            "overall_score": 88,
-            "rank": "A",
-            "consistency_score": 90,
-            "content_quality_score": 85,
-            "evaluation_summary": "エントリーシートでアピールされていた強みと、実際の質問回答内容に強い一貫性があります。具体例も伴っており説得力があります。",
-            "improvement_advice": "さらに評価を高めるためには、行動の動機（なぜそれをしようと思ったのか）や、活動を通じて得られた学びをどう活かすかについて少し言及を加えると良いでしょう。"
+            "overall_score": overall_score,
+            "rank": rank,
+            "consistency_score": consistency_score,
+            "content_quality_score": content_quality_score,
+            "evaluation_summary": summary,
+            "improvement_advice": advice
         }
