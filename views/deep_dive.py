@@ -8,8 +8,6 @@ from src.tts import generate_tts
 from src.utils import TEMP_DIR
 
 def render_deep_dive_view(avatar_path: str):
-    st.info("👁️ 視線トラッキング中：面接官（カメラ）を見ながら、回答文をタイピングしてください。")
-    
     col1, col2 = st.columns([1, 2], gap="large")
     
     with col1:

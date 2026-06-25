@@ -48,7 +48,6 @@ st.markdown("""
 <a href="/?reset=true" target="_self" class="header-banner-link">
     <div class="header-banner">
         <div class="main-title">🤖 AI面接練習システム</div>
-        <div class="sub-title">視線トラッキング搭載 評価プロトタイプ</div>
     </div>
 </a>
 """, unsafe_allow_html=True)

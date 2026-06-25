@@ -377,22 +377,43 @@ div[data-testid="stTabs"] div[data-baseweb="tab-highlight-bar"] {
 .header-banner-link {
     text-decoration: none !important;
     display: block;
-    width: 100%;
+    width: 100% !important;
 }
 .header-banner {
     background: rgba(255, 255, 255, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 8px;
+    padding: 8px 16px;
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     box-shadow: 0 10px 30px rgba(148, 163, 184, 0.05);
     transition: all 0.3s ease;
     cursor: pointer;
+    width: 100% !important;
+    box-sizing: border-box;
+}
+.header-banner .main-title {
+    font-size: 1.8rem !important;
+    margin-bottom: 0 !important;
+    padding: 0 !important;
 }
 .header-banner:hover {
     background: rgba(255, 255, 255, 0.7);
     border-color: rgba(99, 102, 241, 0.3);
     box-shadow: 0 15px 35px rgba(99, 102, 241, 0.1);
     transform: translateY(-2px);
+}
+
+/* HTMLコンポーネントによる空白のボックス・余白の除去 */
+iframe[title="st.components.v1.html"] {
+    position: absolute !important;
+    width: 0 !important;
+    height: 0 !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    visibility: hidden !important;
+}
+div[data-testid="element-container"]:has(iframe[title="st.components.v1.html"]) {
+    display: none !important;
 }

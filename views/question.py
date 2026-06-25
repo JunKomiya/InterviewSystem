@@ -6,8 +6,6 @@ from src.tts import generate_tts
 from src.utils import TEMP_DIR
 
 def render_question_view(avatar_path: str):
-    st.info("👁️ 視線トラッキング中：面接中はカメラをまっすぐ見つめるよう意識してください。")
-    
     col1, col2 = st.columns([1, 2], gap="large")
     
     with col1:
