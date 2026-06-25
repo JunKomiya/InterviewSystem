@@ -405,15 +405,6 @@ div[data-testid="stTabs"] div[data-baseweb="tab-highlight-bar"] {
 }
 
 /* HTMLコンポーネントによる空白のボックス・余白の除去 */
-iframe[title="st.components.v1.html"] {
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    visibility: hidden !important;
-}
-div[data-testid="element-container"]:has(iframe[title="st.components.v1.html"]) {
+div[data-testid="stCustomComponentV1"] {
     display: none !important;
 }
