@@ -372,3 +372,27 @@ div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
 div[data-testid="stTabs"] div[data-baseweb="tab-highlight-bar"] {
     background-color: #4f46e5 !important;
 }
+
+/* ヘッダーバナーのスタイル */
+.header-banner-link {
+    text-decoration: none !important;
+    display: block;
+    width: 100%;
+}
+.header-banner {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.header-banner:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.1);
+    transform: translateY(-2px);
+}

@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from src.session_manager import init_session, stop_recorder
+from src.session_manager import init_session, stop_recorder, reset_session
 from views.start import render_start_view
 from views.setup import render_setup_view
 from views.question import render_question_view
@@ -32,16 +32,25 @@ load_css()
 # セッション状態の初期化と初回ローディング画面
 init_session()
 
+# クエリパラメータによるリセット（最初のシーンへ戻る）検知
+if st.query_params.get("reset") == "true":
+    reset_session()
+    st.session_state.step = "START"
+    st.query_params.clear()
+    st.rerun()
+
 # 以前の残存している視線トラッキングスレッドがあれば停止
 if st.session_state.step == "SETUP":
     stop_recorder()
 
-# ヘッダー
+# ヘッダーバナー
 st.markdown("""
-<div class="header-container">
-    <div class="main-title">🤖 AI面接練習システム</div>
-    <div class="sub-title">視線トラッキング搭載 評価プロトタイプ</div>
-</div>
+<a href="/?reset=true" target="_self" class="header-banner-link">
+    <div class="header-banner">
+        <div class="main-title">🤖 AI面接練習システム</div>
+        <div class="sub-title">視線トラッキング搭載 評価プロトタイプ</div>
+    </div>
+</a>
 """, unsafe_allow_html=True)
 
 avatar_path = "interviewer_avatar.png"
