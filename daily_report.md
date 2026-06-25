@@ -27,7 +27,14 @@
   - [src/tts.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/src/tts.py) に `play_audio_background` 関数を新規実装。音声ファイルをバイナリで読み込み Base64 エンコードした上で、`<audio autoplay style="display:none;">` タグを持つHTMLコンポーネント (`st.components.v1.html`) を高さ0、幅0で埋め込む処理を構築しました。
   - [views/question.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/question.py)、[views/deep_dive.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/deep_dive.py)、[views/evaluation.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/evaluation.py) の3ファイルについて、従来の `st.audio` の呼び出し部分をすべて上記 `play_audio_background` に置き換えました。これにより、UIから音声プレイヤーの表示が完全に消失し、ユーザーがシークバーを操作して巻き戻しや早送りを行うことを物理的に防ぎながら、音声のみを自動再生する挙動を実現しました。
 
-#### 5. Git への反映と PUSH
+#### 5. 最初のシーンに戻るヘッダーバナーの実装
+- **インタラクティブなヘッダーバナーの実装**:
+  - 静的なテキストであった「🤖 AI面接練習システム」のヘッダー部分を、クリック可能なリンク（アンカータグ）としてバナー化しました。
+  - [main.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/main.py) のヘッダー記述を HTML リンクへ書き換え、クリック時に `/?reset=true` クエリパラメータをブラウザのアドレスバーに付与してリロードさせるようにしました。
+  - `main.py` のライフサイクル初期化部分でクエリパラメータを検出し、`reset=true` が検出された場合には `session_manager` の `reset_session()` を実行し、セッション状態を完全にクリアした上で `st.session_state.step` を最初のシーン（`START`）へ差し戻してリランする制御ロジックを実装しました。
+  - [style.css](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/style.css) に `.header-banner` および `.header-banner-link` クラスを追加。バナーのセンタリング配置、角丸や影の付与、さらにマウスホバー時にバナー全体が滑らかに浮き上がり背景色が変化するアニメーションを追加し、インタラクティブ性を向上させました。
+
+#### 6. Git への反映と PUSH
 - **修正内容のコミットとリモートリポジトリへの反映**:
   - コミット① (昨日分): `feat: 過去5回平均ゲージの追加および笑顔メトリクスの削除` (ハッシュ: `6ea6fd0`)
   - コミット② (本日分 - 減点機能): `feat: 回答長不足時のメイン評価減点機能の追加` (ハッシュ: `3b3f736`)
