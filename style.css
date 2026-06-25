@@ -408,3 +408,42 @@ div[data-testid="stTabs"] div[data-baseweb="tab-highlight-bar"] {
 div[data-testid="stCustomComponentV1"] {
     display: none !important;
 }
+
+/* Streamlitネイティブコンテナのカードスタイル装飾 */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.glass-card-marker) {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 20px !important;
+    padding: 30px !important;
+    box-shadow: 0 20px 40px rgba(148, 163, 184, 0.12) !important;
+    margin-bottom: 25px !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.glass-card-marker.height-100-marker) {
+    height: 100% !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.glass-card-marker.text-center-marker) {
+    text-align: center !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.glass-card-marker.evaluation-tab-marker) {
+    margin-top: 15px !important;
+    padding: 25px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08) !important;
+    border-radius: 20px !important;
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(.interviewer-panel-marker) {
+    background: rgba(255, 255, 255, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-radius: 20px !important;
+    padding: 25px !important;
+    text-align: center !important;
+    box-shadow: 0 10px 30px rgba(148, 163, 184, 0.08) !important;
+}
+

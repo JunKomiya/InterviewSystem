@@ -34,11 +34,14 @@
   - `main.py` のライフサイクル初期化部分でクエリパラメータを検出し、`reset=true` が検出された場合には `session_manager` の `reset_session()` を実行し、セッション状態を完全にクリアした上で `st.session_state.step` を最初のシーン（`START`）へ差し戻してリランする制御ロジックを実装しました。
   - [style.css](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/style.css) に `.header-banner` および `.header-banner-link` クラスを追加。バナーのセンタリング配置、角丸や影の付与、さらにマウスホバー時にバナー全体が滑らかに浮き上がり背景色が変化するアニメーションを追加し、インタラクティブ性を向上させました。
 
-#### 6. 面接シーンの不要要素・空白枠の削除
-- **視線トラッキング中の案内表示と空白のウィジェット枠の削除**:
-  - 面接の各質問ビュー（[views/question.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/question.py) および [views/deep_dive.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/deep_dive.py)）の最上部に表示されていた案内ボックス（`st.info` での「👁️ 視線トラッキング中：〜」等の案内）を削除しました。
-  - バックグラウンド音声再生用の非表示 iframe 要素（`st.components.v1.html`）を埋め込んだ際に、Streamlit が自動生成するプレースホルダー枠によって発生していた「空白の何もないボックス２つ」を非表示にするため、[style.css](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/style.css) にスタイルを追加。
-  - `iframe[title="st.components.v1.html"]` のサイズを 0 に潰し、親の `element-container` を非表示にすることで、画面上に現れる不要な空白枠を完全に消去しました。
+#### 6. 面接シーンの空白枠（白いボックス）の完全排除とレイアウト構造の最適化
+- **HTMLの不整合による空のカード枠の排除**:
+  - 従来、[views/question.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/question.py) や [views/deep_dive.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/deep_dive.py) 等で使われていた `st.markdown('<div class="glass-card">', unsafe_allow_html=True)` などの unclosed（閉じられていない）タグが、Streamlitの各要素生成時に自動的に閉じられて空のHTMLブロックとして描画され、「白いボックスが2つ配置される」不具合の根本原因となっていました。
+  - unclosedなタグの使用を完全に廃止し、Streamlitネイティブの `with st.container(border=True):` ブロックを使用する構造へとレイアウト設計を刷新しました。
+  - 対象ファイル（[views/question.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/question.py)、[views/deep_dive.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/deep_dive.py)、[views/setup.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/setup.py)、[views/evaluation.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/evaluation.py)）のすべての HTML カード・ラッパーを `st.container(border=True)` にリプレイスしました。
+- **CSSによるネイティブコンテナのカード装飾**:
+  - [style.css](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/style.css) に `:has()` セレクターを用いた CSS ルールを追加し、`st.container(border=True)` の内部に配置した非表示のマーカー div（例: `<div class="glass-card-marker" style="display:none;"></div>`）をトリガーにして、`stVerticalBlockBorderWrapper` に対して `.glass-card` や `.interviewer-panel` と同一の背景、ぼかし（backdrop-filter）、影（box-shadow）、角丸スタイルが適用されるように最適化しました。
+  - これにより、HTMLタグのミスマッチによる不要な白いボックスを完全排除し、各カラムの要素を理想のカードデザインで綺麗に包み込む正しいレイアウトを構築しました。
 
 #### 7. Git への反映と PUSH
 - **修正内容のコミットとリモートリポジトリへの反映**:
@@ -46,8 +49,9 @@
   - コミット② (本日分 - 減点機能): `feat: 回答長不足時のメイン評価減点機能の追加` (ハッシュ: `3b3f736`)
   - コミット③ (本日分 - 音声制御): `feat: 音声プレイヤーを完全非表示化しバックグラウンドで自動再生するよう変更` (ハッシュ: `c5bea66`)
   - コミット④ (本日分 - バナー追加): `feat: 最初のシーンに戻るヘッダーバナーを追加` (ハッシュ: `75e5e69`)
-  - コミット⑤ (本日分 - UIクレンジング): `feat: バナーレイアウト調整と不要なメッセージ・空白枠の削除` (ハッシュ: `73db594`)
-  - コミット⑥ (日報反映分): `docs: 2026-06-25の日報追加（バナー・音声非表示・UIクレンジング対応含む）`
+  - コミット⑤ (本日分 - UIクレンジング①): `feat: バナーレイアウト調整と不要なメッセージ・空白枠の削除` (ハッシュ: `73db594`)
+  - コミット⑥ (本日分 - UIクレンジング②): `feat: 空白のカスタムコンポーネント枠を非表示化` (ハッシュ: `ceb74cd`)
+  - コミット⑦ (日報反映分): `docs: 2026-06-25の日報追加（バナー・音声非表示・UIクレンジング対応含む）`
   - 上記コミットをすべて含め、リモートリポジトリの `main` ブランチへ PUSH を実施しました。
 
 ---

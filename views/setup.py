@@ -639,112 +639,111 @@ def render_setup_view(avatar_path: str):
     col_setup_left, col_setup_right = st.columns([1, 1], gap="large")
     
     with col_setup_left:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("📝 エントリーシート（ES）の入力")
-        
-        name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
-        final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
-        
-        job_options = ["技術職 (エンジニア)", "総合職・営業職", "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
-        job_index = 0
-        if st.session_state.job_type in job_options:
-            job_index = job_options.index(st.session_state.job_type)
-        
-        job_selection = st.selectbox("希望する職種", job_options, index=job_index)
-        
-        if job_selection == "その他（自由記入）":
-            custom_job = st.text_input("職種名を入力してください（例: デザイナー、データサイエンティスト）")
-            st.session_state.job_type = custom_job.strip()
-        else:
-            st.session_state.job_type = job_selection
+        with st.container(border=True):
+            st.markdown('<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
+            st.subheader("📝 エントリーシート（ES）の入力")
+            
+            name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
+            final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
+            
+            job_options = ["技術職 (エンジニア)", "総合職・営業職", "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
+            job_index = 0
+            if st.session_state.job_type in job_options:
+                job_index = job_options.index(st.session_state.job_type)
+            
+            job_selection = st.selectbox("希望する職種", job_options, index=job_index)
+            
+            if job_selection == "その他（自由記入）":
+                custom_job = st.text_input("職種名を入力してください（例: デザイナー、データサイエンティスト）")
+                st.session_state.job_type = custom_job.strip()
+            else:
+                st.session_state.job_type = job_selection
 
-        tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
-        qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
-        
-        st.write("**経験工程 (複数選択可)**")
-        col_p1, col_p2, col_p3 = st.columns(3)
-        with col_p1:
-            p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
-            p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
-        with col_p2:
-            p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
-            p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
-        with col_p3:
-            p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
-            p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
-        
-        selected_processes = []
-        if p_req: selected_processes.append("要件定義")
-        if p_basic: selected_processes.append("基本設計")
-        if p_detail: selected_processes.append("詳細設計")
-        if p_code: selected_processes.append("実装・プログラミング")
-        if p_test: selected_processes.append("テスト・単体検証")
-        if p_maint: selected_processes.append("運用保守")
-        
-        experienced_processes_content = st.text_area(
-            "経験した工程の具体的な内容",
-            placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
-            value=st.session_state.experienced_processes_content,
-            height=120
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
+            tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
+            qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
+            
+            st.write("**経験工程 (複数選択可)**")
+            col_p1, col_p2, col_p3 = st.columns(3)
+            with col_p1:
+                p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
+                p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
+            with col_p2:
+                p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
+                p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
+            with col_p3:
+                p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
+                p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
+            
+            selected_processes = []
+            if p_req: selected_processes.append("要件定義")
+            if p_basic: selected_processes.append("基本設計")
+            if p_detail: selected_processes.append("詳細設計")
+            if p_code: selected_processes.append("実装・プログラミング")
+            if p_test: selected_processes.append("テスト・単体検証")
+            if p_maint: selected_processes.append("運用保守")
+            
+            experienced_processes_content = st.text_area(
+                "経験した工程の具体的な内容",
+                placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
+                value=st.session_state.experienced_processes_content,
+                height=120
+            )
 
     with col_setup_right:
-        st.markdown('<div class="glass-card" style="height: 100%;">', unsafe_allow_html=True)
-        st.subheader("⚙️ 動作・API設定")
-        
-        mode_selection = st.radio(
-            "システム動作モードを選択してください",
-            ["AIモード (Google AI Studio連携)", "モックモード (オフラインデモ)"],
-            index=0 if st.session_state.mode == "AI" else 1
-        )
-        st.session_state.mode = "AI" if "AIモード" in mode_selection else "MOCK"
-        
-        if st.session_state.mode == "AI":
-            env_key_exists = "GEMINI_API_KEY" in os.environ
-            help_txt = "環境変数 GEMINI_API_KEY が検出されました。入力しなくても動作可能です。" if env_key_exists else "Google AI StudioのAPIキーを入力してください。"
+        with st.container(border=True):
+            st.markdown('<div class="glass-card-marker height-100-marker" style="display:none;"></div>', unsafe_allow_html=True)
+            st.subheader("⚙️ 動作・API設定")
+            
+            mode_selection = st.radio(
+                "システム動作モードを選択してください",
+                ["AIモード (Google AI Studio連携)", "モックモード (オフラインデモ)"],
+                index=0 if st.session_state.mode == "AI" else 1
+            )
+            st.session_state.mode = "AI" if "AIモード" in mode_selection else "MOCK"
+            
+            if st.session_state.mode == "AI":
+                env_key_exists = "GEMINI_API_KEY" in os.environ
+                help_txt = "環境変数 GEMINI_API_KEY が検出されました。入力しなくても動作可能です。" if env_key_exists else "Google AI StudioのAPIキーを入力してください。"
 
-            # APIキー入力とテストボタンを横並びにする
-            col_key, col_btn = st.columns([2, 1])
-            with col_key:
-                gemini_key = st.text_input(
-                    "Google AI Studio APIキー",
-                    type="password",
-                    value=st.session_state.api_key if st.session_state.api_key else os.environ.get("GEMINI_API_KEY", ""),
-                    placeholder="AI Studio API Key (AIモードに必須)",
-                    help=help_txt
-                )
-                st.session_state.api_key = gemini_key.strip()
-                # インタビュアークラスのインスタンス化または更新
-                if st.session_state.api_key or os.environ.get("GEMINI_API_KEY"):
-                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
-            with col_btn:
-                st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True) # 余白合わせ
-                if st.button("🔑 接続テスト"):
-                    with st.spinner("API接続確認中..."):
-                        if not st.session_state.get("interviewer"):
-                            st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
-                        success, msg = st.session_state.interviewer.verify_connection()
-                        st.session_state.api_test_result = {"success": success, "msg": msg}
-            
-            # API接続テスト結果の表示
-            if st.session_state.api_test_result:
-                res = st.session_state.api_test_result
-                if res["success"]:
-                    st.success(res["msg"])
-                else:
-                    st.error(res["msg"])
-        else:
-            st.info("オフラインデモ用のモックモードで動作します。APIキーは不要です。")
-            
-        st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
-        if "show_options" not in st.session_state:
-            st.session_state.show_options = False
-        if st.button("⚙️ 環境設定・オプションを開く", use_container_width=True, key="setup_open_options_btn"):
-            st.session_state.show_options = True
-            st.rerun()
-            
-        st.markdown('</div>', unsafe_allow_html=True)
+                # APIキー入力とテストボタンを横並びにする
+                col_key, col_btn = st.columns([2, 1])
+                with col_key:
+                    gemini_key = st.text_input(
+                        "Google AI Studio APIキー",
+                        type="password",
+                        value=st.session_state.api_key if st.session_state.api_key else os.environ.get("GEMINI_API_KEY", ""),
+                        placeholder="AI Studio API Key (AIモードに必須)",
+                        help=help_txt
+                    )
+                    st.session_state.api_key = gemini_key.strip()
+                    # インタビュアークラスのインスタンス化または更新
+                    if st.session_state.api_key or os.environ.get("GEMINI_API_KEY"):
+                        st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                with col_btn:
+                    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True) # 余白合わせ
+                    if st.button("🔑 接続テスト"):
+                        with st.spinner("API接続確認中..."):
+                            if not st.session_state.get("interviewer"):
+                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                            success, msg = st.session_state.interviewer.verify_connection()
+                            st.session_state.api_test_result = {"success": success, "msg": msg}
+                
+                # API接続テスト結果の表示
+                if st.session_state.api_test_result:
+                    res = st.session_state.api_test_result
+                    if res["success"]:
+                        st.success(res["msg"])
+                    else:
+                        st.error(res["msg"])
+            else:
+                st.info("オフラインデモ用のモックモードで動作します。APIキーは不要です。")
+                
+            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
+            if "show_options" not in st.session_state:
+                st.session_state.show_options = False
+            if st.button("⚙️ 環境設定・オプションを開く", use_container_width=True, key="setup_open_options_btn"):
+                st.session_state.show_options = True
+                st.rerun()
 
     # 過去の面接履歴の表示
     st.markdown("<br>", unsafe_allow_html=True)
