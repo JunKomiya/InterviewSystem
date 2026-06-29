@@ -7,7 +7,7 @@ from src.database import save_interview_result
 from src.tts import generate_tts, play_audio_background
 from src.utils import TEMP_DIR
 
-def render_interview_view(avatar_path: str):
+def render_interview_view():
     # 音声ファイルの再生（レイアウト影響を防ぐため最上部で実行）
     is_speaking = False
     if st.session_state.get("current_audio_to_play") and os.path.exists(st.session_state.current_audio_to_play):
@@ -258,3 +258,43 @@ def render_interview_view(avatar_path: str):
                             
                             st.session_state.step = "EVALUATION"
                             st.rerun()
+
+    # JavaScriptによるCtrl+Enter送信・Enter改行の制御（st.components.v1.htmlを用いて安全にiframe内でスクリプトを実行し、window.parent.document経由で親画面を操作）
+    st.components.v1.html(
+        """
+        <script>
+        function setupEnterSubmit() {
+            try {
+                const doc = window.parent.document;
+                const textareas = doc.querySelectorAll('textarea');
+                textareas.forEach(textarea => {
+                    if (!textarea.dataset.enterSubmitAdded) {
+                        textarea.dataset.enterSubmitAdded = 'true';
+                        textarea.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                e.preventDefault();
+                                textarea.blur();
+                                setTimeout(() => {
+                                    const buttons = Array.from(doc.querySelectorAll('button'));
+                                    const submitBtn = buttons.find(btn => 
+                                        btn.textContent.includes('回答を送信') || 
+                                        btn.textContent.includes('送信する')
+                                    );
+                                    if (submitBtn) {
+                                        submitBtn.click();
+                                    }
+                                }, 150);
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error("Ctrl+Enter listener registration failed: ", e);
+            }
+        }
+        setInterval(setupEnterSubmit, 500);
+        </script>
+        """,
+        height=0,
+        width=0
+    )

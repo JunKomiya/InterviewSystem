@@ -36,11 +36,11 @@ class GeminiInterviewer:
             
         try:
             response = self.client.models.generate_content(
-                model="gemini-2.5-flash-lite",
+                model="gemini-3.1-flash-lite",
                 contents="PING"
             )
             if response.text:
-                return True, f"接続成功! モデル (gemini-2.5-flash-lite) が利用可能です。\n(応答例: {response.text.strip()[:60]}...)"
+                return True, f"接続成功! モデル (gemini-3.1-flash-lite) が利用可能です。\n(応答例: {response.text.strip()[:60]}...)"
             return False, "APIからの応答が空でした。"
         except Exception as e:
             error_msg = str(e)
@@ -149,6 +149,9 @@ class GeminiInterviewer:
             "1. consistency_score (0〜100点): ESに記載された技術スキル・経験工程と、実際の面接での回答内容に矛盾がないか、一貫して軸が通っているかを評価します。\n"
             "2. content_quality_score (0〜100点): エピソードの具体性。単に「やりました」だけでなく、「課題に対してどう考え、どう行動したか」がエンジニア（志望職種）として魅力的に伝わっているかを評価します。\n"
             "   - 【重要】回答の長さが極端に短い場合（目安として1回の回答が概ね50文字未満、または一言・二言だけの不十分な回答など）、どれほどESの内容と一貫していても、具体性が著しく不足していると判断し、content_quality_score を大幅に減点（最大で40点以下）してください。さらに、改善アドバイスにおいて「回答が短すぎるため、より詳細にアピールするように」という旨を優しく指摘してください。\n\n"
+            "【フィードバック文章（evaluation_summary, improvement_advice）の作成に関する厳格な禁止ルール】\n"
+            "1. プログラミングで利用している引数・変数・キー名（例: consistency_score, content_quality_score, overall_score, rank, conversation_log, es_data, user_answer_1, user_answer_2, などの変数名・プログラムパラメータ名）を、フィードバック文（evaluation_summary および improvement_advice）の中に絶対に含めないでください。これらはシステム内部の変数であり、学生向けの文章に露出してはいけません。\n"
+            "2. コード内で使用されている数値的な判定基準（例: 「50文字未満」「40点以下」などの数値）を、フィードバック文内にそのまま記載しないでください。数値的な基準は、すべて言葉による説明（例: 「回答の長さが極端に短い」「回答の具体性が不十分」「評価が大幅に低くなる」など）に変換してください。\n\n"
             "【判定ルール】\n"
             "- 総合スコア（overall_score）は上記2つのバランスを考慮して0〜100点で算出してください。\n"
             "- ランク（rank）はスコアに応じて厳密に決定してください（S: 90以上, A: 80-89, B: 60-79, C: 59以下）。\n\n"
@@ -158,8 +161,8 @@ class GeminiInterviewer:
             '    "rank": "総合判定ランク（文字列：S、A、B、Cのいずれか）",\n'
             '    "consistency_score": 一貫性スコア（数値）,\n'
             '    "content_quality_score": 適切さスコア（数値）,\n'
-            '    "evaluation_summary": "面接官ナナミからの総評。良かった点や、面接を通じて伝わってきた本人の強みを優しくフィードバックしてください。",\n'
-            '    "improvement_advice": "プロのキャリアアドバイザー視点での具体的な改善アドバイス。「次回から〇〇についてもっと具体的に話すとさらに良くなります」など、実践的な内容にしてください。"\n'
+            '    "evaluation_summary": "面接官ナナミからの総評。良かった点や、面接を通じて伝わってきた本人の強みを優しくフィードバックしてください。決してプログラム引数や数値的な閾値を含めず、自然な日本語のみで記述してください。",\n'
+            '    "improvement_advice": "プロのキャリアアドバイザー視点での具体的な改善アドバイス。「次回から〇〇についてもっと具体的に話すとさらに良くなります」など、実践的な内容にしてください。こちらもプログラム引数や数値的な閾値を一切含めないようにしてください。"\n'
             "}"
         )
         prompt = json.dumps({
@@ -181,7 +184,7 @@ class GeminiInterviewer:
         if not self.client:
             raise RuntimeError("APIクライアントが初期化されていません。")
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.1-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -267,7 +270,7 @@ class GeminiInterviewer:
                     rank = "C"
                 
                 summary = "回答内容にESとの明らかな矛盾は見られませんが、回答文が非常に短く、アピールとしての具体性に欠けています。"
-                advice = "自己紹介や深掘り質問に対する回答が短すぎます（目安として各回答50文字以上）。面接官にあなたの魅力や経験がしっかりと伝わるよう、具体的な取り組みや課題へのアプローチをもっと詳しく説明するようにしてください。"
+                advice = "自己紹介や深掘り質問に対する回答が短すぎます。面接官にあなたの魅力や経験がしっかりと伝わるよう、具体的な取り組みや課題へのアプローチをもっと詳しく説明するようにしてください。"
 
         return {
             "overall_score": overall_score,

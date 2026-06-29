@@ -4,7 +4,7 @@ from src.session_manager import reset_session
 from src.database import get_interview_history
 
 
-def render_evaluation_view(avatar_path: str):
+def render_evaluation_view():
     st.success("🎉 面接のすべてのステップが終了しました！評価レポートを表示します。")
     if st.session_state.get("gaze_measurement_warning", False):
         st.warning("⚠️ 適切に計測できませんでした（カメラ位置や照明を確認してください）")

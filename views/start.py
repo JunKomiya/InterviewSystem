@@ -1,6 +1,6 @@
 import streamlit as st
 
-def render_start_view(avatar_path: str):
+def render_start_view():
     # CSS3 脈動アニメーションの挿入
     st.markdown("""
         <style>
@@ -63,6 +63,7 @@ def render_start_view(avatar_path: str):
                 PCのWebカメラを通じて面接中のあなたの目線の動きを分析し、アイコンタクトの安定度を可視化します。<br>
                 エントリーシートの登録をもとに、AI面接官があなたの強みを深く掘り下げます。
             </p>
+            <div style="text-align: right; margin-top: 15px; color: #94a3b8; font-size: 0.8rem; font-family: monospace;">var 0.003</div>
         </div>
     """, unsafe_allow_html=True)
     

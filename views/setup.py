@@ -644,7 +644,7 @@ def render_options_section():
 
 
 
-def render_setup_view(avatar_path: str):
+def render_setup_view():
     # 2カラムレイアウトで表示
     col_setup_left, col_setup_right = st.columns([1, 1], gap="large")
     

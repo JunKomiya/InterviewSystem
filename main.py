@@ -51,17 +51,15 @@ st.markdown("""
 </a>
 """, unsafe_allow_html=True)
 
-avatar_path = "interviewer_avatar.png"
-
 # ルーティング処理 (現在のステップに応じてビューを描画)
 if st.session_state.step == "START":
-    render_start_view(avatar_path)
+    render_start_view()
 elif st.session_state.step == "SETUP":
-    render_setup_view(avatar_path)
+    render_setup_view()
 elif st.session_state.step == "INTERVIEW":
-    render_interview_view(avatar_path)
+    render_interview_view()
 elif st.session_state.step == "EVALUATION":
-    render_evaluation_view(avatar_path)
+    render_evaluation_view()
 
 # フッター
 st.markdown("""

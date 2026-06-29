@@ -1,5 +1,57 @@
 # 日報 (Daily Report)
 
+## 📅 2026年6月29日 (月)
+
+### 📌 本日の業務内容
+
+本日は、面接評価結果のフィードバック内容（総評・改善指導）にプログラミング上の変数名（引数名）や内部的な数値基準（閾値）がそのまま露出してしまう問題への対策、使用する生成AIモデルを `gemini-3.1-flash-lite` へアップグレードする対応、プロジェクト内の不要な画像アセット（アバター画像等）のクレンジング、面接回答入力エリアにおけるキー操作性改善（Ctrl+Enterで送信、Enterで改行）、およびタイトル画面へのバージョン表記（var 0.xxx）の追加とREADME.mdへのバージョン更新ルールの明記を実施しました。
+
+#### 1. フィードバック文生成プロンプトの厳格化
+- **変数名および閾値表記の禁止ルール追加**:
+  - [src/gemini_interviewer.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/src/gemini_interviewer.py) 内の `generate_evaluation_report` メソッドでGemini APIに渡すシステムプロンプト (`system_instruction`) を更新。
+  - プログラミング内部の変数名やキー名（例: `consistency_score`, `content_quality_score`, `overall_score`, `rank`, `conversation_log`, `es_data` など）を、総評 (`evaluation_summary`) および改善アドバイス (`improvement_advice`) の文章中に絶対に露出させないよう禁止ルールを追加しました。
+  - 「50文字未満」「40点以下」といった評価基準の具体的な数値をそのまま記述するのを禁止し、「回答の長さが極端に短い」「回答の具体性が不十分」「評価が大幅に低くなる」といった自然な日本語での説明に変換してフィードバックするよう指示を厳格化しました。
+
+#### 2. モック評価モードのアドバイス文のクレンジング
+- **`_mock_evaluation_report` の修正**:
+  - デモ・オフライン用のモック評価結果生成メソッド `_mock_evaluation_report` で、回答が短い場合に返却されるアドバイス文内に含まれていた「（目安として各回答50文字以上）」という数値表現を削除。
+  - プログラムパラメータに依存しない、純粋な自然言語のフィードバックメッセージへと書き換えました。
+
+#### 3. テストスクリプトによる動作確認
+- **検証の実施**:
+  - 作成したテストスクリプトを通じて、モック評価処理が例外なく正常に動作し、かつ出力されるアドバイスメッセージや総評が指示通りの表現になっていることを確認しました。
+
+#### 4. Gemini API 採用モデルのアップグレード
+- **`gemini-3.1-flash-lite` への移行**:
+  - [src/gemini_interviewer.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/src/gemini_interviewer.py) において、接続確認メソッド `verify_connection` およびコンテンツ生成メソッド `_call_api` で指定しているモデルIDを `gemini-2.5-flash-lite` から **`gemini-3.1-flash-lite`** へ変更しました。
+
+#### 5. 不要な画像ファイルの削除とコードクレンジング
+- **アセットの削除**:
+  - 各面接画面のUIから面接官アバター画像を非表示にしたことに伴い、不要となった `interviewer_avatar.png` ファイルを物理削除しました。
+- **シグネチャのクレンジング**:
+  - [main.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/main.py) から `avatar_path` の定義を削除し、各画面の描画関数である `render_start_view`、`render_setup_view`、`render_interview_view`、`render_evaluation_view` の引数・定義から未使用の `avatar_path` パラメータを排除しました。
+
+#### 6. 面接画面の入力エリアの操作性向上
+- **Ctrl+Enter（Cmd+Enter）送信・Enter改行の導入とiframeサンドボックス回避**:
+  - [views/interview.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/interview.py) において、Streamlit の `st.text_area` での回答入力中に、Enterキー単体押下では通常の改行が行われ、Ctrl+Enter（Macの場合はCmd+Enter）押下時に回答が送信されるように JavaScript による DOM 制御スクリプトを実装しました。
+  - 標準の `st.components.v1.html` 経由では、Streamlitコンポーネントが配置される iframe とメインウィンドウとの間のクロスオリジン（サンドボックス）セキュリティ制限により、親ドキュメントの DOM イベントのキャプチャがブロックされる問題が発生したため、これを回避するアプローチを構築。
+  - `st.markdown(..., unsafe_allow_html=True)` を用い、`<svg onload="...">` 内で即時関数としてイベントリスナーを登録する手法を採用することで、親ウィンドウのコンテキストで直接安全にDOM操作を可能にし、安定したキー入出力UXを確立しました。
+  - これにより、誤送信を防ぎつつ、キーボード操作のみでスムーズに回答を送信して面接を進めることができるUXを実現しました。
+
+#### 7. バージョン表記の導入と README への管理ルール追加
+- **バージョン表記の表示**:
+  - タイトル画面（スタート画面：[views/start.py](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/views/start.py)）の右下隅に、プロジェクトの変更履歴を示す `var 0.001` の文字を固定表示するスタイルを実装しました。
+- **READMEの更新**:
+  - 今後プロジェクトのファイル更新や追加があった場合、バージョン値を最小の桁から1つずつ足して更新していくルールを、開発ガイドラインである [README.md](file:///c:/Users/Jun/Desktop/Interview%20practice%20system/README.md) に追記しました。
+
+---
+
+### 💡 所感・課題
+評価ロジックとフィードバック文章の生成ロジックがより疎結合になり、ユーザー（学生）に対して親切で自然なキャリアアドバイスが提供できるようになりました。
+今後は、実際の面接進行時におけるAPI応答の品質向上とあわせ、ユーザーの体験（UX）を損ねないようなエラーハンドリングの設計をさらに進めます。
+
+---
+
 ## 📅 2026年6月26日 (金)
 
 ### 📌 本日の業務内容
