@@ -84,22 +84,10 @@ def render_evaluation_view(avatar_path: str):
                     </div>
                     """, unsafe_allow_html=True)
         
-        # 面接官アバター
-        with st.container(border=True):
-            st.markdown('<div class="interviewer-panel-marker" style="display:none;"></div>', unsafe_allow_html=True)
-            if os.path.exists(avatar_path):
-                st.image(avatar_path, width='stretch')
-            else:
-                st.markdown("""
-                <div class="avatar-wrapper">
-                    <div class="avatar-img" style="background: #333; display: flex; align-items: center; justify-content: center;">👤</div>
-                </div>
-                """, unsafe_allow_html=True)
-            st.markdown('<h3>面接官 ナナミ</h3>', unsafe_allow_html=True)
-            
-            if st.session_state.eval_audio_path and os.path.exists(st.session_state.eval_audio_path):
-                from src.tts import play_audio_background
-                play_audio_background(st.session_state.eval_audio_path)
+        # 評価音声の再生 (非表示コンポーネント)
+        if st.session_state.eval_audio_path and os.path.exists(st.session_state.eval_audio_path):
+            from src.tts import play_audio_background
+            play_audio_background(st.session_state.eval_audio_path)
         
     with col_r:
         # タブ機能を使って「総合評価」と「視線分析」を切り替え表示
@@ -118,18 +106,34 @@ def render_evaluation_view(avatar_path: str):
                 st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 20px 0;'>", unsafe_allow_html=True)
                 
                 st.markdown('<h3 style="color: #0f172a; font-size: 1.35rem; font-weight: 700; margin-bottom: 15px;">📝 本日の面接ログ</h3>', unsafe_allow_html=True)
-                st.markdown(f"""
-                <div style="background: rgba(255, 255, 255, 0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
-                    <p style="color: #1e293b; margin-bottom: 4px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
-                    <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #818cf8; padding-left: 10px; margin-bottom: 20px;">
-                        {st.session_state.user_answer_1}
-                    </p>
-                    <p style="color: #1e293b; margin-bottom: 4px;"><strong>【深掘り質問への回答】</strong></p>
-                    <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #4fd1c5; padding-left: 10px;">
-                        {st.session_state.user_answer_2}
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown('<div style="background: rgba(255, 255, 255, 0.5); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 15px;">', unsafe_allow_html=True)
+                if st.session_state.get("chat_history"):
+                    for msg in st.session_state.chat_history:
+                        role_label = "🤖 【面接官からの質問】" if msg["role"] == "interviewer" else "👤 【あなたの回答】"
+                        border_color = "#818cf8" if msg["role"] == "interviewer" else "#0d9488"
+                        text_escaped = msg["text"].replace('\n', '<br>')
+                        st.markdown(f"""
+                        <div>
+                            <p style="color: #1e293b; margin-bottom: 4px; font-weight: 600;"><strong>{role_label}</strong></p>
+                            <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid {border_color}; padding-left: 10px; margin-bottom: 0;">
+                                {text_escaped}
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    <div>
+                        <p style="color: #1e293b; margin-bottom: 4px;"><strong>【自己紹介と強みの質問への回答】</strong></p>
+                        <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #818cf8; padding-left: 10px; margin-bottom: 20px;">
+                            {st.session_state.user_answer_1}
+                        </p>
+                        <p style="color: #1e293b; margin-bottom: 4px;"><strong>【深掘り質問への回答】</strong></p>
+                        <p style="color: #0f172a; font-size: 1rem; border-left: 3px solid #4fd1c5; padding-left: 10px;">
+                            {st.session_state.user_answer_2}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
             
         with tab2:
             with st.container(border=True):

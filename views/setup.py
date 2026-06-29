@@ -14,11 +14,341 @@ from src.gaze_tracker import (
     collect_calibration_sample
 )
 
-def on_options_dismiss():
-    st.session_state.show_options = False
+def reset_dialog_state():
+    st.session_state.show_calib_dialog = False
+    st.session_state.calib_wizard_step = 1
 
-@st.dialog("環境設定・オプション", width="large", on_dismiss=on_options_dismiss)
-def show_options_modal():
+@st.dialog("📐 視線キャリブレーション", width="large", on_dismiss=reset_dialog_state)
+def run_calibration_dialog():
+    if "calib_wizard_step" not in st.session_state:
+        st.session_state.calib_wizard_step = 2
+    if "calib_center_res" not in st.session_state:
+        st.session_state.calib_center_res = None
+    if "calib_limit_res" not in st.session_state:
+        st.session_state.calib_limit_res = None
+        
+    if st.session_state.calib_wizard_step == 1:
+        st.session_state.calib_wizard_step = 2
+
+    if st.session_state.calib_wizard_step == 2:
+        st.markdown(
+            """
+            <div class="calib-container">
+                <div class="calib-step-indicator">ステップ 2 / 8: 正面注視ターゲット提示</div>
+                <div class="calib-target-wrapper">
+                    <div class="calib-target-center"></div>
+                </div>
+                <div style="margin-top: 15px; font-weight: bold; color: #0d9488;">アバター（またはWebカメラ）をまっすぐ正面に見つめてください。</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        col_btn1, col_btn2 = st.columns([2, 1])
+        with col_btn1:
+            if st.button("正面サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step3", type="primary"):
+                st.session_state.calib_wizard_step = 3
+                st.rerun()
+        with col_btn2:
+            if st.button("キャンセル", use_container_width=True, key="btn_cancel_step2"):
+                st.session_state.calib_wizard_step = 1
+                st.session_state.show_calib_dialog = False
+                st.rerun()
+                
+    elif st.session_state.calib_wizard_step == 3:
+        countdown_placeholder = st.empty()
+        for i in range(3, 0, -1):
+            countdown_placeholder.markdown(
+                f"""
+                <div class="calib-container">
+                    <div class="calib-step-indicator">ステップ 3 / 8: 正面データ収集（データ集め準備）</div>
+                    <div class="calib-target-wrapper">
+                        <div class="calib-target-center"></div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 2.5rem; font-weight: 800; color: #0d9488;">{i}</div>
+                    <div style="margin-top: 5px; font-weight: bold; color: #64748b;">測定開始まで {i} 秒... 画面中央を見つめてください。</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            time.sleep(1.0)
+        
+        countdown_placeholder.markdown(
+            """
+            <div class="calib-container">
+                <div class="calib-step-indicator">ステップ 3 / 8: 正面データ収集（データ集め中）</div>
+                <div class="calib-target-wrapper">
+                    <div class="calib-target-center"></div>
+                </div>
+                <div style="margin-top: 15px; font-weight: bold; color: #0d9488; animation: blink 1s infinite;">● 測定中 (約2秒間)...</div>
+                <div style="margin-top: 5px; font-weight: bold; color: #64748b;">視線を動かさないでください。</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
+        countdown_placeholder.empty()
+        
+        if res:
+            st.session_state.calib_center_res = res
+        else:
+            st.session_state.calib_center_res = None
+        st.session_state.calib_wizard_step = 4
+        st.rerun()
+            
+    elif st.session_state.calib_wizard_step == 4:
+        st.markdown('<div class="calib-container">', unsafe_allow_html=True)
+        st.markdown('<div class="calib-step-indicator">ステップ 4 / 8: 正面データ解析</div>', unsafe_allow_html=True)
+        
+        res = st.session_state.calib_center_res
+        if res:
+            st.markdown(
+                f"""
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <span style="color: #0d9488; font-size: 1.2rem; font-weight: bold;">✓ 正面解析完了</span><br>
+                    <div style="font-size: 1.1rem; margin-top: 10px;">基準の視線座標が正常に計算されました。</div>
+                    <div style="font-size: 1rem; color: #64748b; margin-top: 5px;">中心座標 (X: {res[0]:.3f}, Y: {res[1]:.3f})</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("次へ（よそ見限界の調整）", use_container_width=True, key="btn_go_step5", type="primary"):
+                    st.session_state.calib_wizard_step = 5
+                    st.rerun()
+            with col_btn2:
+                if st.button("もう一度やり直す", use_container_width=True, key="btn_retry_step4"):
+                    st.session_state.calib_wizard_step = 2
+                    st.session_state.calib_center_res = None
+                    st.rerun()
+        else:
+            st.markdown(
+                """
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">⚠ 解析失敗</span><br>
+                    <div style="font-size: 1.1rem; margin-top: 10px; color: #ff7675;">顔または視線が検出できませんでした。</div>
+                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">部屋の照明を明るくするか、カメラの角度を調整してください。</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step4_err", type="primary"):
+                    st.session_state.calib_wizard_step = 2
+                    st.session_state.calib_center_res = None
+                    st.rerun()
+            with col_btn2:
+                if st.button("キャンセル", use_container_width=True, key="btn_cancel_step4"):
+                    st.session_state.calib_wizard_step = 1
+                    st.session_state.calib_center_res = None
+                    st.session_state.show_calib_dialog = False
+                    st.rerun()
+                    
+    elif st.session_state.calib_wizard_step == 5:
+        st.markdown(
+            """
+            <div class="calib-container">
+                <div class="calib-step-indicator">ステップ 5 / 8: よそ見ターゲット提示</div>
+                <div class="calib-target-wrapper">
+                    <div class="calib-target-away"></div>
+                </div>
+                <div style="margin-top: 15px; font-weight: bold; color: #ff7675;">「これ以上目をそらしたら『よそ見』と判定させたい限界位置（画面の端など）」を見つめてください。</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        col_btn1, col_btn2 = st.columns([2, 1])
+        with col_btn1:
+            if st.button("よそ見サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step6", type="primary"):
+                st.session_state.calib_wizard_step = 6
+                st.rerun()
+        with col_btn2:
+            if st.button("戻る", use_container_width=True, key="btn_back_step5"):
+                st.session_state.calib_wizard_step = 4
+                st.rerun()
+                
+    elif st.session_state.calib_wizard_step == 6:
+        countdown_placeholder = st.empty()
+        for i in range(3, 0, -1):
+            countdown_placeholder.markdown(
+                f"""
+                <div class="calib-container">
+                    <div class="calib-step-indicator">ステップ 6 / 8: よそ見データ収集（データ集め準備）</div>
+                    <div class="calib-target-wrapper">
+                        <div class="calib-target-away"></div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 2.5rem; font-weight: 800; color: #ff7675;">{i}</div>
+                    <div style="margin-top: 5px; font-weight: bold; color: #64748b;">測定開始まで {i} 秒... 画面左端を見つめてください。</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            time.sleep(1.0)
+        
+        countdown_placeholder.markdown(
+            """
+            <div class="calib-container">
+                <div class="calib-step-indicator">ステップ 6 / 8: よそ見データ収集（データ集め中）</div>
+                <div class="calib-target-wrapper">
+                    <div class="calib-target-away"></div>
+                </div>
+                <div style="margin-top: 15px; font-weight: bold; color: #ff7675; animation: blink 1s infinite;">● 測定中 (約2秒間)...</div>
+                <div style="margin-top: 5px; font-weight: bold; color: #64748b;">視線を動かさないでください。</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
+        countdown_placeholder.empty()
+        
+        if res:
+            st.session_state.calib_limit_res = res
+        else:
+            st.session_state.calib_limit_res = None
+        st.session_state.calib_wizard_step = 7
+        st.rerun()
+            
+    elif st.session_state.calib_wizard_step == 7:
+        st.markdown('<div class="calib-container">', unsafe_allow_html=True)
+        st.markdown('<div class="calib-step-indicator">ステップ 7 / 8: よそ見データ解析</div>', unsafe_allow_html=True)
+        
+        res = st.session_state.calib_limit_res
+        if res:
+            st.markdown(
+                f"""
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">✓ よそ見解析完了</span><br>
+                    <div style="font-size: 1.1rem; margin-top: 10px;">よそ見限界の視線座標が正常に計算されました。</div>
+                    <div style="font-size: 1rem; color: #64748b; margin-top: 5px;">限界座標 (X: {res[0]:.3f}, Y: {res[1]:.3f})</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("次へ（結果の確認・適用）", use_container_width=True, key="btn_go_step8", type="primary"):
+                    st.session_state.calib_wizard_step = 8
+                    st.rerun()
+            with col_btn2:
+                if st.button("もう一度やり直す", use_container_width=True, key="btn_retry_step7"):
+                    st.session_state.calib_wizard_step = 5
+                    st.session_state.calib_limit_res = None
+                    st.rerun()
+        else:
+            st.markdown(
+                """
+                <div style="margin-top: 10px; margin-bottom: 20px;">
+                    <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">⚠ 解析失敗</span><br>
+                    <div style="font-size: 1.1rem; margin-top: 10px; color: #ff7675;">顔または視線が検出できませんでした。</div>
+                    <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">部屋の照明を明るくするか、カメラの角度を調整してください。</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step7_err", type="primary"):
+                    st.session_state.calib_wizard_step = 5
+                    st.session_state.calib_limit_res = None
+                    st.rerun()
+            with col_btn2:
+                if st.button("キャンセル", use_container_width=True, key="btn_cancel_step7"):
+                    st.session_state.calib_wizard_step = 1
+                    st.session_state.calib_limit_res = None
+                    st.session_state.show_calib_dialog = False
+                    st.rerun()
+                    
+    elif st.session_state.calib_wizard_step == 8:
+        st.markdown('<div class="calib-container">', unsafe_allow_html=True)
+        st.markdown('<div class="calib-step-indicator">ステップ 8 / 8: 結果出力・許容値更新</div>', unsafe_allow_html=True)
+        
+        if not st.session_state.calib_center_res or not st.session_state.calib_limit_res:
+            st.warning("キャリブレーションデータが不足しています。最初からやり直してください。")
+            if st.button("最初に戻る", use_container_width=True):
+                st.session_state.calib_wizard_step = 2
+                st.session_state.calib_center_res = None
+                st.session_state.calib_limit_res = None
+                st.rerun()
+        else:
+            cx, cy = st.session_state.calib_center_res
+            lx, ly = st.session_state.calib_limit_res
+            
+            h_diff = abs(lx - cx)
+            v_diff = abs(ly - cy)
+            
+            h_margin = max(0.04, min(0.22, h_diff))
+            v_margin = max(0.04, min(0.22, v_diff))
+            
+            new_h_range = (round(cx - h_margin, 2), round(cx + h_margin, 2))
+            new_v_range = (round(cy - v_margin, 2), round(cy + v_margin, 2))
+            
+            st.markdown(
+                f"""
+                <div style="text-align: left; width: 100%; padding: 10px 20px;">
+                    <div style="font-weight: bold; font-size: 1.1rem; color: #0d9488; margin-bottom: 10px;">📐 計算されたキャリブレーション結果</div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 6px 0; color: #475569;">正面中心点 (X, Y)</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: bold;">({cx:.2f}, {cy:.2f})</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 0; color: #475569;">よそ見限界点 (X, Y)</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: bold;">({lx:.2f}, {ly:.2f})</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 0; color: #475569;">計算された左右許容幅</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0d9488;">±{h_margin:.2f}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 6px 0; color: #475569;">計算された上下許容幅</td>
+                            <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0d9488;">±{v_margin:.2f}</td>
+                        </tr>
+                    </table>
+                    <div style="margin-top: 15px; padding: 10px; background: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 8px;">
+                        <div style="font-weight: bold; color: #0d9488; font-size: 0.95rem;">🎯 新しい許容範囲設定:</div>
+                        <div style="font-size: 0.9rem; margin-top: 4px;">左右: <b>{new_h_range[0]} - {new_h_range[1]}</b> / 上下: <b>{new_v_range[0]} - {new_v_range[1]}</b></div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            col_btn1, col_btn2 = st.columns([2, 1])
+            with col_btn1:
+                if st.button("💾 この設定を適用して終了する", use_container_width=True, key="btn_apply_calib_finish", type="primary"):
+                    st.session_state.h_range = new_h_range
+                    st.session_state.v_range = new_v_range
+                    
+                    st.session_state.calib_wizard_step = 1
+                    st.session_state.calib_center_res = None
+                    st.session_state.calib_limit_res = None
+                    st.session_state.show_calib_dialog = False
+                    
+                    st.toast("🎯 新しい視線許容範囲を適用しました！")
+                    st.rerun()
+            with col_btn2:
+                if st.button("破棄して閉じる", use_container_width=True, key="btn_reset_wizard"):
+                    st.session_state.calib_wizard_step = 1
+                    st.session_state.calib_center_res = None
+                    st.session_state.calib_limit_res = None
+                    st.session_state.show_calib_dialog = False
+                    st.rerun()
+
+def render_options_section():
     st.markdown("システムの動作環境（デバイス、各種機能のオン/オフおよびパラメータ）を調整します。")
     
     st.markdown("### 🔊 サウンド設定 (スピーカーの選択)")
@@ -128,350 +458,28 @@ def show_options_modal():
                 st.session_state.camera_index = cam_options[selected_cam_idx]
                 
             with col_cam_scan:
-                st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-                if st.button("🔄 再検出", key="dialog_camera_scan_btn"):
-                    with st.spinner("カメラをスキャン中..."):
-                        st.session_state.available_cameras = scan_available_cameras()
-                        st.rerun()
-                        
-            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
+                          st.subheader("📐 視線許容範囲の自動調整 (キャリブレーション)")
+            st.markdown("カメラを実際に見つめて、あなたの目線の動きに合わせた最適な許容範囲を自動計測します。")
             
-            st.subheader("📐 視線許容範囲の自動調整 (キャリブレーション)")
-            
-            # セッションにウィザード用の変数を作成
+            # ダイアログ表示用の初期化
+            if "show_calib_dialog" not in st.session_state:
+                st.session_state.show_calib_dialog = False
             if "calib_wizard_step" not in st.session_state:
                 st.session_state.calib_wizard_step = 1
             if "calib_center_res" not in st.session_state:
                 st.session_state.calib_center_res = None
             if "calib_limit_res" not in st.session_state:
                 st.session_state.calib_limit_res = None
-                
-            if st.session_state.calib_wizard_step == 1:
-                st.markdown("カメラを実際に見つめて、あなたの目線の動きに合わせた最適な許容範囲を自動計測します。")
-                if st.button("📐 自動調整（キャリブレーション）を開始する", use_container_width=True, type="primary", key="btn_start_calib"):
-                    st.session_state.calib_wizard_step = 2
-                    st.rerun()
-                    
-            elif st.session_state.calib_wizard_step == 2:
-                st.markdown(
-                    """
-                    <div class="calib-container">
-                        <div class="calib-step-indicator">ステップ 2 / 8: 正面注視ターゲット提示</div>
-                        <div class="calib-target-wrapper">
-                            <div class="calib-target-center"></div>
-                        </div>
-                        <div style="margin-top: 15px; font-weight: bold; color: #0d9488;">アバター（またはWebカメラ）をまっすぐ正面に見つめてください。</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                col_btn1, col_btn2 = st.columns([2, 1])
-                with col_btn1:
-                    if st.button("正面サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step3", type="primary"):
-                        st.session_state.calib_wizard_step = 3
-                        st.rerun()
-                with col_btn2:
-                    if st.button("キャンセル", use_container_width=True, key="btn_cancel_step2"):
-                        st.session_state.calib_wizard_step = 1
-                        st.rerun()
-                        
-            elif st.session_state.calib_wizard_step == 3:
-                # カウントダウンを同一コンテナ内で表示するためのプレースホルダー
-                countdown_placeholder = st.empty()
-                for i in range(3, 0, -1):
-                    countdown_placeholder.markdown(
-                        f"""
-                        <div class="calib-container">
-                            <div class="calib-step-indicator">ステップ 3 / 8: 正面データ収集（データ集め準備）</div>
-                            <div class="calib-target-wrapper">
-                                <div class="calib-target-center"></div>
-                            </div>
-                            <div style="margin-top: 15px; font-size: 2.5rem; font-weight: 800; color: #0d9488;">{i}</div>
-                            <div style="margin-top: 5px; font-weight: bold; color: #64748b;">測定開始まで {i} 秒... 画面中央を見つめてください。</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    time.sleep(1.0)
-                
-                # 測定中の表示に切り替え
-                countdown_placeholder.markdown(
-                    """
-                    <div class="calib-container">
-                        <div class="calib-step-indicator">ステップ 3 / 8: 正面データ収集（データ集め中）</div>
-                        <div class="calib-target-wrapper">
-                            <div class="calib-target-center"></div>
-                        </div>
-                        <div style="margin-top: 15px; font-weight: bold; color: #0d9488; animation: blink 1s infinite;">● 測定中 (約2秒間)...</div>
-                        <div style="margin-top: 5px; font-weight: bold; color: #64748b;">視線を動かさないでください。</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                # 測定開始
-                res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
-                countdown_placeholder.empty()
-                
-                if res:
-                    st.session_state.calib_center_res = res
-                else:
-                    st.session_state.calib_center_res = None
-                st.session_state.calib_wizard_step = 4
+
+            if st.button("📐 自動調整（キャリブレーション）を開始する", use_container_width=True, type="primary", key="btn_start_calib"):
+                # リアルタイム診断が有効なら強制的にOFFにしてカメラをリリースさせる
+                st.session_state.dialog_live_cam_checkbox = False
+                st.session_state.show_calib_dialog = True
+                st.session_state.calib_wizard_step = 2
                 st.rerun()
-                    
-            elif st.session_state.calib_wizard_step == 4:
-                st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-                st.markdown('<div class="calib-step-indicator">ステップ 4 / 8: 正面データ解析</div>', unsafe_allow_html=True)
-                
-                res = st.session_state.calib_center_res
-                if res:
-                    st.markdown(
-                        f"""
-                        <div style="margin-top: 10px; margin-bottom: 20px;">
-                            <span style="color: #0d9488; font-size: 1.2rem; font-weight: bold;">✓ 正面解析完了</span><br>
-                            <div style="font-size: 1.1rem; margin-top: 10px;">基準の視線座標が正常に計算されました。</div>
-                            <div style="font-size: 1rem; color: #64748b; margin-top: 5px;">中心座標 (X: {res[0]:.3f}, Y: {res[1]:.3f})</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    col_btn1, col_btn2 = st.columns([2, 1])
-                    with col_btn1:
-                        if st.button("次へ（よそ見限界の調整）", use_container_width=True, key="btn_go_step5", type="primary"):
-                            st.session_state.calib_wizard_step = 5
-                            st.rerun()
-                    with col_btn2:
-                        if st.button("もう一度やり直す", use_container_width=True, key="btn_retry_step4"):
-                            st.session_state.calib_wizard_step = 2
-                            st.session_state.calib_center_res = None
-                            st.rerun()
-                else:
-                    st.markdown(
-                        """
-                        <div style="margin-top: 10px; margin-bottom: 20px;">
-                            <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">⚠ 解析失敗</span><br>
-                            <div style="font-size: 1.1rem; margin-top: 10px; color: #ff7675;">顔または視線が検出できませんでした。</div>
-                            <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">部屋の照明を明るくするか、カメラの角度を調整してください。</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    col_btn1, col_btn2 = st.columns([2, 1])
-                    with col_btn1:
-                        if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step4_err", type="primary"):
-                            st.session_state.calib_wizard_step = 2
-                            st.session_state.calib_center_res = None
-                            st.rerun()
-                    with col_btn2:
-                        if st.button("キャンセル", use_container_width=True, key="btn_cancel_step4"):
-                            st.session_state.calib_wizard_step = 1
-                            st.session_state.calib_center_res = None
-                            st.rerun()
-                            
-            elif st.session_state.calib_wizard_step == 5:
-                st.markdown(
-                    """
-                    <div class="calib-container">
-                        <div class="calib-step-indicator">ステップ 5 / 8: よそ見ターゲット提示</div>
-                        <div class="calib-target-wrapper">
-                            <div class="calib-target-away"></div>
-                        </div>
-                        <div style="margin-top: 15px; font-weight: bold; color: #ff7675;">「これ以上目をそらしたら『よそ見』と判定させたい限界位置（画面の端など）」を見つめてください。</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                col_btn1, col_btn2 = st.columns([2, 1])
-                with col_btn1:
-                    if st.button("よそ見サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step6", type="primary"):
-                        st.session_state.calib_wizard_step = 6
-                        st.rerun()
-                with col_btn2:
-                    if st.button("戻る", use_container_width=True, key="btn_back_step5"):
-                        st.session_state.calib_wizard_step = 4
-                        st.rerun()
-                        
-            elif st.session_state.calib_wizard_step == 6:
-                # カウントダウンを同一コンテナ内で表示するためのプレースホルダー
-                countdown_placeholder = st.empty()
-                for i in range(3, 0, -1):
-                    countdown_placeholder.markdown(
-                        f"""
-                        <div class="calib-container">
-                            <div class="calib-step-indicator">ステップ 6 / 8: よそ見データ収集（データ集め準備）</div>
-                            <div class="calib-target-wrapper">
-                                <div class="calib-target-away"></div>
-                            </div>
-                            <div style="margin-top: 15px; font-size: 2.5rem; font-weight: 800; color: #ff7675;">{i}</div>
-                            <div style="margin-top: 5px; font-weight: bold; color: #64748b;">測定開始まで {i} 秒... 画面左端を見つめてください。</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    time.sleep(1.0)
-                
-                # 測定中の表示に切り替え
-                countdown_placeholder.markdown(
-                    """
-                    <div class="calib-container">
-                        <div class="calib-step-indicator">ステップ 6 / 8: よそ見データ収集（データ集め中）</div>
-                        <div class="calib-target-wrapper">
-                            <div class="calib-target-away"></div>
-                        </div>
-                        <div style="margin-top: 15px; font-weight: bold; color: #ff7675; animation: blink 1s infinite;">● 測定中 (約2秒間)...</div>
-                        <div style="margin-top: 5px; font-weight: bold; color: #64748b;">視線を動かさないでください。</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                # 測定開始
-                res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
-                countdown_placeholder.empty()
-                
-                if res:
-                    st.session_state.calib_limit_res = res
-                else:
-                    st.session_state.calib_limit_res = None
-                st.session_state.calib_wizard_step = 7
-                st.rerun()
-                    
-            elif st.session_state.calib_wizard_step == 7:
-                st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-                st.markdown('<div class="calib-step-indicator">ステップ 7 / 8: よそ見データ解析</div>', unsafe_allow_html=True)
-                
-                res = st.session_state.calib_limit_res
-                if res:
-                    st.markdown(
-                        f"""
-                        <div style="margin-top: 10px; margin-bottom: 20px;">
-                            <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">✓ よそ見解析完了</span><br>
-                            <div style="font-size: 1.1rem; margin-top: 10px;">よそ見限界の視線座標が正常に計算されました。</div>
-                            <div style="font-size: 1rem; color: #64748b; margin-top: 5px;">限界座標 (X: {res[0]:.3f}, Y: {res[1]:.3f})</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    col_btn1, col_btn2 = st.columns([2, 1])
-                    with col_btn1:
-                        if st.button("次へ（結果の確認・適用）", use_container_width=True, key="btn_go_step8", type="primary"):
-                            st.session_state.calib_wizard_step = 8
-                            st.rerun()
-                    with col_btn2:
-                        if st.button("もう一度やり直す", use_container_width=True, key="btn_retry_step7"):
-                            st.session_state.calib_wizard_step = 5
-                            st.session_state.calib_limit_res = None
-                            st.rerun()
-                else:
-                    st.markdown(
-                        """
-                        <div style="margin-top: 10px; margin-bottom: 20px;">
-                            <span style="color: #ff7675; font-size: 1.2rem; font-weight: bold;">⚠ 解析失敗</span><br>
-                            <div style="font-size: 1.1rem; margin-top: 10px; color: #ff7675;">顔または視線が検出できませんでした。</div>
-                            <div style="font-size: 0.9rem; color: #64748b; margin-top: 5px;">部屋の照明を明るくするか、カメラの角度を調整してください。</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    col_btn1, col_btn2 = st.columns([2, 1])
-                    with col_btn1:
-                        if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step7_err", type="primary"):
-                            st.session_state.calib_wizard_step = 5
-                            st.session_state.calib_limit_res = None
-                            st.rerun()
-                    with col_btn2:
-                        if st.button("キャンセル", use_container_width=True, key="btn_cancel_step7"):
-                            st.session_state.calib_wizard_step = 1
-                            st.session_state.calib_limit_res = None
-                            st.rerun()
-                            
-            elif st.session_state.calib_wizard_step == 8:
-                st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-                st.markdown('<div class="calib-step-indicator">ステップ 8 / 8: 結果出力・許容値更新</div>', unsafe_allow_html=True)
-                
-                if not st.session_state.calib_center_res or not st.session_state.calib_limit_res:
-                    st.warning("キャリブレーションデータが不足しています。最初からやり直してください。")
-                    if st.button("最初に戻る", use_container_width=True):
-                        st.session_state.calib_wizard_step = 1
-                        st.session_state.calib_center_res = None
-                        st.session_state.calib_limit_res = None
-                        st.rerun()
-                else:
-                    cx, cy = st.session_state.calib_center_res
-                    lx, ly = st.session_state.calib_limit_res
-                    
-                    h_diff = abs(lx - cx)
-                    v_diff = abs(ly - cy)
-                    
-                    # 安全制限つきマージン（極端な値を防止）
-                    h_margin = max(0.04, min(0.22, h_diff))
-                    v_margin = max(0.04, min(0.22, v_diff))
-                    
-                    new_h_range = (round(cx - h_margin, 2), round(cx + h_margin, 2))
-                    new_v_range = (round(cy - v_margin, 2), round(cy + v_margin, 2))
-                    
-                    st.markdown(
-                        f"""
-                        <div style="text-align: left; width: 100%; padding: 10px 20px;">
-                            <div style="font-weight: bold; font-size: 1.1rem; color: #0d9488; margin-bottom: 10px;">📐 計算されたキャリブレーション結果</div>
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="padding: 6px 0; color: #475569;">正面中心点 (X, Y)</td>
-                                    <td style="padding: 6px 0; text-align: right; font-weight: bold;">({cx:.2f}, {cy:.2f})</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; color: #475569;">よそ見限界点 (X, Y)</td>
-                                    <td style="padding: 6px 0; text-align: right; font-weight: bold;">({lx:.2f}, {ly:.2f})</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; color: #475569;">計算された左右許容幅</td>
-                                    <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0d9488;">±{h_margin:.2f}</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px 0; color: #475569;">計算された上下許容幅</td>
-                                    <td style="padding: 6px 0; text-align: right; font-weight: bold; color: #0d9488;">±{v_margin:.2f}</td>
-                                </tr>
-                            </table>
-                            <div style="margin-top: 15px; padding: 10px; background: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.2); border-radius: 8px;">
-                                <div style="font-weight: bold; color: #0d9488; font-size: 0.95rem;">🎯 新しい許容範囲設定:</div>
-                                <div style="font-size: 0.9rem; margin-top: 4px;">左右: <b>{new_h_range[0]} - {new_h_range[1]}</b> / 上下: <b>{new_v_range[0]} - {new_v_range[1]}</b></div>
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    
-                    col_btn1, col_btn2 = st.columns([2, 1])
-                    with col_btn1:
-                        if st.button("💾 この設定を適用して終了する", use_container_width=True, key="btn_apply_calib_finish", type="primary"):
-                            st.session_state.h_range = new_h_range
-                            st.session_state.v_range = new_v_range
-                            
-                            st.session_state.calib_wizard_step = 1
-                            st.session_state.calib_center_res = None
-                            st.session_state.calib_limit_res = None
-                            
-                            st.session_state.show_options = False
-                            st.toast("🎯 新しい視線許容範囲を適用しました！")
-                            st.rerun()
-                    with col_btn2:
-                        if st.button("破棄してやり直す", use_container_width=True, key="btn_reset_wizard"):
-                            st.session_state.calib_wizard_step = 1
-                            st.session_state.calib_center_res = None
-                            st.session_state.calib_limit_res = None
-                            st.rerun()
+
+            if st.session_state.get("show_calib_dialog", False):
+                run_calibration_dialog()
                     
             st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
             
@@ -501,9 +509,15 @@ def show_options_modal():
             st.markdown("<br>", unsafe_allow_html=True)
             
             # リアルタイム診断モードのトグル
-            live_cam_active = st.checkbox("📹 リアルタイム診断モードを開始する (診断プレビュー)", value=False, key="dialog_live_cam_checkbox")
+            is_calib_active = st.session_state.get("show_calib_dialog", False)
+            live_cam_active = st.checkbox(
+                "📹 リアルタイム診断モードを開始する (診断プレビュー)",
+                value=False,
+                key="dialog_live_cam_checkbox",
+                disabled=is_calib_active
+            )
             
-            if live_cam_active:
+            if live_cam_active and not is_calib_active:
                 import cv2
                 import mediapipe as mp
                 import platform
@@ -629,10 +643,6 @@ def show_options_modal():
 
 
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("設定を閉じる", use_container_width=True, key="dialog_close_btn"):
-        st.session_state.show_options = False
-        st.rerun()
 
 def render_setup_view(avatar_path: str):
     # 2カラムレイアウトで表示
@@ -738,12 +748,8 @@ def render_setup_view(avatar_path: str):
             else:
                 st.info("オフラインデモ用のモックモードで動作します。APIキーは不要です。")
                 
-            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
-            if "show_options" not in st.session_state:
-                st.session_state.show_options = False
-            if st.button("⚙️ 環境設定・オプションを開く", use_container_width=True, key="setup_open_options_btn"):
-                st.session_state.show_options = True
-                st.rerun()
+            with st.expander("⚙️ 環境設定・オプション", expanded=True):
+                render_options_section()
 
     # 過去の面接履歴の表示
     st.markdown("<br>", unsafe_allow_html=True)
@@ -864,8 +870,14 @@ def render_setup_view(avatar_path: str):
                 success = generate_tts(q1_text, filename)
                 if success:
                     st.session_state.audio_path = filename
-                st.session_state.step = "QUESTION"
+                
+                # チャット履歴の初期化
+                st.session_state.chat_history = [{
+                    "role": "interviewer",
+                    "text": q1_text,
+                    "audio_path": filename if success else ""
+                }]
+                st.session_state.current_audio_to_play = filename if success else None
+                st.session_state.step = "INTERVIEW"
                 st.rerun()
 
-    if st.session_state.get("show_options", False):
-        show_options_modal()

@@ -3,8 +3,7 @@ import streamlit as st
 from src.session_manager import init_session, stop_recorder, reset_session
 from views.start import render_start_view
 from views.setup import render_setup_view
-from views.question import render_question_view
-from views.deep_dive import render_deep_dive_view
+from views.interview import render_interview_view
 from views.evaluation import render_evaluation_view
 
 # 環境変数のAPIキーに改行などが含まれる場合のクレンジング
@@ -59,10 +58,8 @@ if st.session_state.step == "START":
     render_start_view(avatar_path)
 elif st.session_state.step == "SETUP":
     render_setup_view(avatar_path)
-elif st.session_state.step == "QUESTION":
-    render_question_view(avatar_path)
-elif st.session_state.step == "DEEP_DIVE":
-    render_deep_dive_view(avatar_path)
+elif st.session_state.step == "INTERVIEW":
+    render_interview_view(avatar_path)
 elif st.session_state.step == "EVALUATION":
     render_evaluation_view(avatar_path)
 
