@@ -4,7 +4,7 @@ import streamlit as st
 from src.gemini_interviewer import GeminiInterviewer
 from src.database import get_interview_history
 from src.tts import generate_tts
-from src.utils import TEMP_DIR, cleanup_temp_files
+from src.utils import TEMP_DIR, cleanup_temp_files, parse_excel_skillsheet
 from src.gaze_tracker import (
     GazeRecorder,
     scan_available_cameras,
@@ -653,9 +653,18 @@ def render_setup_view():
             st.markdown('<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
             st.subheader("📝 エントリーシート（ES）の入力")
             
-            name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
-            final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
+            # 入力方式の選択
+            es_input_method = st.radio(
+                "ES入力方法を選択してください",
+                ["手動入力", "Excelアップロード (skillsheet.xlsx)"],
+                index=0 if st.session_state.get("es_input_method", "MANUAL") == "MANUAL" else 1,
+                horizontal=True
+            )
+            st.session_state.es_input_method = "MANUAL" if es_input_method == "手動入力" else "EXCEL"
             
+            st.markdown("---")
+            
+            # 希望する職種 (両モード共通)
             job_options = ["技術職 (エンジニア)", "総合職・営業職", "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
             job_index = 0
             if st.session_state.job_type in job_options:
@@ -665,39 +674,100 @@ def render_setup_view():
             
             if job_selection == "その他（自由記入）":
                 custom_job = st.text_input("職種名を入力してください（例: デザイナー、データサイエンティスト）")
-                st.session_state.job_type = custom_job.strip()
+                st.session_state.job_type = custom_job.strip() if custom_job else ""
             else:
                 st.session_state.job_type = job_selection
+                
+            st.markdown("<br>", unsafe_allow_html=True)
 
-            tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
-            qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
-            
-            st.write("**経験工程 (複数選択可)**")
-            col_p1, col_p2, col_p3 = st.columns(3)
-            with col_p1:
-                p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
-                p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
-            with col_p2:
-                p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
-                p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
-            with col_p3:
-                p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
-                p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
-            
-            selected_processes = []
-            if p_req: selected_processes.append("要件定義")
-            if p_basic: selected_processes.append("基本設計")
-            if p_detail: selected_processes.append("詳細設計")
-            if p_code: selected_processes.append("実装・プログラミング")
-            if p_test: selected_processes.append("テスト・単体検証")
-            if p_maint: selected_processes.append("運用保守")
-            
-            experienced_processes_content = st.text_area(
-                "経験した工程の具体的な内容",
-                placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
-                value=st.session_state.experienced_processes_content,
-                height=120
-            )
+            if st.session_state.es_input_method == "MANUAL":
+                name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
+                final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
+                
+                tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
+                qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
+                
+                st.write("**経験工程 (複数選択可)**")
+                col_p1, col_p2, col_p3 = st.columns(3)
+                with col_p1:
+                    p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
+                    p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
+                with col_p2:
+                    p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
+                    p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
+                with col_p3:
+                    p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
+                    p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
+                
+                selected_processes = []
+                if p_req: selected_processes.append("要件定義")
+                if p_basic: selected_processes.append("基本設計")
+                if p_detail: selected_processes.append("詳細設計")
+                if p_code: selected_processes.append("実装・プログラミング")
+                if p_test: selected_processes.append("テスト・単体検証")
+                if p_maint: selected_processes.append("運用保守")
+                
+                experienced_processes_content = st.text_area(
+                    "経験した工程の具体的な内容",
+                    placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
+                    value=st.session_state.experienced_processes_content,
+                    height=120
+                )
+            else:
+                # Excelアップロードモード
+                uploaded_file = st.file_uploader(
+                    "技術経歴書 (skillsheet.xlsx) をアップロードしてください", 
+                    type=["xlsx", "xls"],
+                    help="アップロードされたファイルからプロフィールやスキル、職務経歴が自動抽出されます。"
+                )
+                
+                if uploaded_file is not None:
+                    try:
+                        parsed_data = parse_excel_skillsheet(uploaded_file)
+                        st.session_state.excel_parsed_data = parsed_data
+                        
+                        st.success("✓ Excelファイルの解析に成功しました！")
+                        
+                        # 解析データのプレビューをリッチに表示
+                        st.markdown(f"""
+                        <div style="background-color: rgba(13, 148, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(13, 148, 136, 0.2); margin-top: 10px; margin-bottom: 15px;">
+                            <div style="font-weight: bold; color: #0d9488; font-size: 1.1rem; margin-bottom: 10px;">📋 解析された経歴書プレビュー</div>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+                                <tr>
+                                    <td style="font-weight: bold; width: 30%; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">お名前:</td>
+                                    <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('name', '未記入')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">最終学歴:</td>
+                                    <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('final_academic_background', '未記入')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">技術スキル:</td>
+                                    <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('tech_skills', '未記入')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">保有資格:</td>
+                                    <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('qualifications', '未記入')}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold; padding: 6px 0;">経験工程:</td>
+                                    <td style="padding: 6px 0;">{', '.join(parsed_data.get('experienced_processes', [])) if parsed_data.get('experienced_processes') else '未記入'}</td>
+                                </tr>
+                            </table>
+                            <details style="margin-top: 12px; border-top: 1px dashed rgba(13, 148, 136, 0.2); padding-top: 10px;">
+                                <summary style="cursor: pointer; color: #0d9488; font-weight: bold; font-size: 0.9rem;">職務経歴・詳細を表示</summary>
+                                <div style="margin-top: 8px; font-size: 0.85rem; background-color: rgba(0,0,0,0.02); padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto; white-space: pre-wrap; color: #334155; border: 1px solid rgba(0,0,0,0.05);">
+                                    {parsed_data.get('experienced_processes_content', '記載なし')}
+                                </div>
+                            </details>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    except Exception as e:
+                        st.error(f"Excel解析中にエラーが発生しました: {e}")
+                        st.session_state.excel_parsed_data = None
+                else:
+                    st.info("経歴書データが含まれたExcelファイルをドラッグ＆ドロップまたは選択してください。")
+                    st.session_state.excel_parsed_data = None
 
     with col_setup_right:
         with st.container(border=True):
@@ -755,10 +825,19 @@ def render_setup_view():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
     st.subheader("📊 過去の面接履歴")
-    if name_input.strip():
-        history = get_interview_history(name_input.strip())
+    
+    # 入力された、またはExcelから読み取られた名前を取得
+    current_name = ""
+    if st.session_state.get("es_input_method", "MANUAL") == "EXCEL":
+        if st.session_state.get("excel_parsed_data"):
+            current_name = st.session_state.excel_parsed_data.get("name", "").strip()
+    else:
+        current_name = name_input.strip() if 'name_input' in locals() else ""
+
+    if current_name:
+        history = get_interview_history(current_name)
         if history:
-            st.markdown(f"**{name_input.strip()}** さんの過去の面接結果 ({len(history)}件) です。クリックして詳細を展開できます。")
+            st.markdown(f"**{current_name}** さんの過去の面接結果 ({len(history)}件) です。クリックして詳細を展開できます。")
             for item in history:
                 created_at = item.get("created_at", "")
                 job_type = item.get("job_type", "")
@@ -795,89 +874,110 @@ def render_setup_view():
                         st.markdown("**💬 第2問回答 (深掘り):**")
                         st.write(item.get("user_answer_2", "") if item.get("user_answer_2") else "（記録なし）")
         else:
-            st.info(f"**{name_input.strip()}** さんの過去の面接履歴は見つかりませんでした。最初の面接練習を開始して履歴を記録しましょう！")
+            st.info(f"**{current_name}** さんの過去の面接履歴は見つかりませんでした。最初の面接練習を開始して履歴を記録しましょう！")
     else:
-        st.warning("お名前を入力すると、過去の履歴が表示されます。")
+        st.warning("お名前を入力、または経歴書Excelをアップロードすると、過去の履歴が表示されます。")
 
     # 開始ボタンを全幅で配置（設定オプションは動作・API設定カード内へ移動）
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 面接練習を開始する", use_container_width=True):
-        if not name_input.strip() or not st.session_state.job_type.strip():
-            st.warning("お名前、希望する職種を入力してください。")
-        elif st.session_state.mode == "AI" and not st.session_state.api_key.strip():
-            st.error("AIモードで実行するには、APIキーを設定してください。")
+        excel_mode = st.session_state.get("es_input_method", "MANUAL") == "EXCEL"
+        excel_data = st.session_state.get("excel_parsed_data")
+        
+        if excel_mode and not excel_data:
+            st.error("Excelファイルをアップロードして解析を完了させてください。")
         else:
-            cleanup_temp_files()
-            
-            # ES情報をセッションステートに保存
-            st.session_state.name = name_input.strip()
-            st.session_state.final_academic_background = final_academic_background.strip()
-            st.session_state.tech_skills = tech_skills.strip()
-            st.session_state.qualifications = qualifications.strip()
-            st.session_state.experienced_processes = selected_processes
-            st.session_state.experienced_processes_content = experienced_processes_content.strip()
-            
-            # 汎用の自己PR要約テキストを作成
-            processes_str = ", ".join(selected_processes) if selected_processes else "なし"
-            st.session_state.es_pr = (
-                f"学歴: {st.session_state.final_academic_background}\n"
-                f"スキル: {st.session_state.tech_skills}\n"
-                f"資格: {st.session_state.qualifications}\n"
-                f"経験工程: {processes_str}\n"
-                f"工程詳細: {st.session_state.experienced_processes_content}"
-            )
-            
-            st.session_state.es_data = {
-                "name": st.session_state.name,
-                "final_academic_background": st.session_state.final_academic_background,
-                "tech_skills": st.session_state.tech_skills,
-                "qualifications": st.session_state.qualifications,
-                "experienced_processes": st.session_state.experienced_processes,
-                "experienced_processes_content": st.session_state.experienced_processes_content,
-                "job_type": st.session_state.job_type
-            }
-            
-            # 視線トラッキングスレッドの開始 (Webカメラ起動、カメラが有効な場合のみ)
-            if st.session_state.get("use_camera", True):
-                st.session_state.recorder = GazeRecorder(
-                    camera_index=st.session_state.camera_index,
-                    h_range=st.session_state.h_range,
-                    v_range=st.session_state.v_range
+            if excel_mode:
+                name = excel_data.get("name", "").strip()
+                final_academic_background = excel_data.get("final_academic_background", "").strip()
+                tech_skills = excel_data.get("tech_skills", "").strip()
+                qualifications = excel_data.get("qualifications", "").strip()
+                selected_processes = excel_data.get("experienced_processes", [])
+                experienced_processes_content = excel_data.get("experienced_processes_content", "").strip()
+            else:
+                name = name_input.strip()
+                final_academic_background = final_academic_background.strip()
+                tech_skills = tech_skills.strip()
+                qualifications = qualifications.strip()
+                selected_processes = selected_processes
+                experienced_processes_content = experienced_processes_content.strip()
+
+            if not name or not st.session_state.job_type.strip():
+                st.warning("お名前、希望する職種を入力してください。")
+            elif st.session_state.mode == "AI" and not st.session_state.api_key.strip():
+                st.error("AIモードで実行するには、APIキーを設定してください。")
+            else:
+                cleanup_temp_files()
+                
+                # ES情報をセッションステートに保存
+                st.session_state.name = name
+                st.session_state.final_academic_background = final_academic_background
+                st.session_state.tech_skills = tech_skills
+                st.session_state.qualifications = qualifications
+                st.session_state.experienced_processes = selected_processes
+                st.session_state.experienced_processes_content = experienced_processes_content
+                
+                # 汎用の自己PR要約テキストを作成
+                processes_str = ", ".join(selected_processes) if selected_processes else "なし"
+                st.session_state.es_pr = (
+                    f"学歴: {st.session_state.final_academic_background}\n"
+                    f"スキル: {st.session_state.tech_skills}\n"
+                    f"資格: {st.session_state.qualifications}\n"
+                    f"経験工程: {processes_str}\n"
+                    f"工程詳細: {st.session_state.experienced_processes_content}"
                 )
-                st.session_state.recorder.start()
-            else:
-                st.session_state.recorder = None
-            
-            q1_text = ""
-            
-            # --- 第一問生成 ---
-            if not st.session_state.get("interviewer"):
-                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
-            else:
-                st.session_state.interviewer.mode = st.session_state.mode
-                st.session_state.interviewer.api_key = st.session_state.api_key
                 
-            with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
-                q1_text = st.session_state.interviewer.generate_first_question(st.session_state.es_data)
-            
-            st.session_state.question_1 = q1_text
-            
-            # 音声ファイルを生成
-            timestamp = int(time.time())
-            filename = os.path.join(TEMP_DIR, f"temp_audio_q1_{timestamp}.mp3")
-            
-            with st.spinner("面接官の音声（TTS）を生成中..."):
-                success = generate_tts(q1_text, filename)
-                if success:
-                    st.session_state.audio_path = filename
+                st.session_state.es_data = {
+                    "name": st.session_state.name,
+                    "final_academic_background": st.session_state.final_academic_background,
+                    "tech_skills": st.session_state.tech_skills,
+                    "qualifications": st.session_state.qualifications,
+                    "experienced_processes": st.session_state.experienced_processes,
+                    "experienced_processes_content": st.session_state.experienced_processes_content,
+                    "job_type": st.session_state.job_type
+                }
                 
-                # チャット履歴の初期化
-                st.session_state.chat_history = [{
-                    "role": "interviewer",
-                    "text": q1_text,
-                    "audio_path": filename if success else ""
-                }]
-                st.session_state.current_audio_to_play = filename if success else None
-                st.session_state.step = "INTERVIEW"
-                st.rerun()
+                # 視線トラッキングスレッドの開始 (Webカメラ起動、カメラが有効な場合のみ)
+                if st.session_state.get("use_camera", True):
+                    st.session_state.recorder = GazeRecorder(
+                        camera_index=st.session_state.camera_index,
+                        h_range=st.session_state.h_range,
+                        v_range=st.session_state.v_range
+                    )
+                    st.session_state.recorder.start()
+                else:
+                    st.session_state.recorder = None
+                
+                q1_text = ""
+                
+                # --- 第一問生成 ---
+                if not st.session_state.get("interviewer"):
+                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
+                else:
+                    st.session_state.interviewer.mode = st.session_state.mode
+                    st.session_state.interviewer.api_key = st.session_state.api_key
+                    
+                with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
+                    q1_text = st.session_state.interviewer.generate_first_question(st.session_state.es_data)
+                
+                st.session_state.question_1 = q1_text
+                
+                # 音声ファイルを生成
+                timestamp = int(time.time())
+                filename = os.path.join(TEMP_DIR, f"temp_audio_q1_{timestamp}.mp3")
+                
+                with st.spinner("面接官の音声（TTS）を生成中..."):
+                    success = generate_tts(q1_text, filename)
+                    if success:
+                        st.session_state.audio_path = filename
+                    
+                    # チャット履歴の初期化
+                    st.session_state.chat_history = [{
+                        "role": "interviewer",
+                        "text": q1_text,
+                        "audio_path": filename if success else ""
+                    }]
+                    st.session_state.current_audio_to_play = filename if success else None
+                    st.session_state.step = "INTERVIEW"
+                    st.rerun()
 
