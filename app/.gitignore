@@ -33,3 +33,7 @@ test_webm_*.webm
 test_vp9.webm
 test_*.webm
 test_*.mp4
+
+# Dynamically generated portable python environment
+.python_env/
+

@@ -56,10 +56,7 @@ def parse_excel_skillsheet(file_obj):
                 break
                 
     if not selected_sheet:
-        if "技術経歴書記載例" in xl.sheet_names:
-            selected_sheet = "技術経歴書記載例"
-        else:
-            selected_sheet = xl.sheet_names[0]
+        raise ValueError("指定された技術経歴書フォーマットではありません。B6セルに『氏名』ラベルが存在することを確認してください。")
             
     df = pd.read_excel(file_obj, sheet_name=selected_sheet, header=None)
     

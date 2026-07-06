@@ -762,8 +762,11 @@ def render_setup_view():
                             </details>
                         </div>
                         """, unsafe_allow_html=True)
+                    except ValueError as ve:
+                        st.error(f"❌ フォーマットエラー: {ve}")
+                        st.session_state.excel_parsed_data = None
                     except Exception as e:
-                        st.error(f"Excel解析中にエラーが発生しました: {e}")
+                        st.error(f"❌ Excel解析中にエラーが発生しました: {e}")
                         st.session_state.excel_parsed_data = None
                 else:
                     st.info("経歴書データが含まれたExcelファイルをドラッグ＆ドロップまたは選択してください。")

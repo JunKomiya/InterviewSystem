@@ -480,3 +480,16 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has(.interviewer-panel-marker) {
     margin-left: 0 !important;
 }
 
+/* 見出しのホバーリンクアイコン（アンカー）を非表示にする */
+.stMarkdown a.anchor-link,
+h1 a.anchor-link,
+h2 a.anchor-link,
+h3 a.anchor-link,
+h4 a.anchor-link,
+h5 a.anchor-link,
+h6 a.anchor-link,
+a.anchor-link {
+    display: none !important;
+}
+
+
