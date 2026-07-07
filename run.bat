@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 setlocal enabledelayedexpansion
 echo ==================================================
 echo   Starting AI Interview System...
@@ -9,19 +10,29 @@ set "PYTHON_EXE=%ENV_DIR%\python.exe"
 
 where python3.12 >nul 2>nul
 if %errorlevel% equ 0 (
-    echo Using system Python 3.12...
+    echo System Python 3.12 found.
     set "RUN_PYTHON=python3.12"
-    goto START_APP
+    goto CHECK_LIBRARIES
 )
 
 if exist "%PYTHON_EXE%" (
-    echo Using portable Python environment...
+    echo Portable Python environment found.
     set "RUN_PYTHON=%PYTHON_EXE%"
-    goto START_APP
+    goto CHECK_LIBRARIES
 )
 
 echo Python 3.12 not found.
-echo Starting automatic setup (takes a few minutes)...
+echo.
+choice /C YN /M "実行に必要な Python 3.12 およびライブラリが見つかりません。自動セットアップ（ダウンロードとインストール）を開始しますか？"
+if %errorlevel% neq 1 (
+    echo.
+    echo セットアップがキャンセルされました。プログラムを終了します。
+    pause
+    exit /b
+)
+
+echo.
+echo Starting automatic setup, please wait...
 echo.
 
 if not exist "%ENV_DIR%" mkdir "%ENV_DIR%"
@@ -48,13 +59,12 @@ if %errorlevel% neq 0 (
 "%PYTHON_EXE%" "%TEMP%\get-pip.py" --no-warn-script-location
 del "%TEMP%\get-pip.py"
 
-echo [4/4] Installing required libraries (Streamlit, MediaPipe, OpenCV, etc.)...
+echo [4/4] Installing required libraries Streamlit, MediaPipe, OpenCV, etc.
 "%ENV_DIR%\Scripts\pip.exe" install --no-warn-script-location --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
 if %errorlevel% neq 0 (
     echo [Error] Failed to install libraries.
     goto ERROR_EXIT
 )
-
 
 echo.
 echo ==================================================
@@ -62,18 +72,48 @@ echo   Setup completed! Launching system...
 echo ==================================================
 echo.
 set "RUN_PYTHON=%PYTHON_EXE%"
+goto START_APP
+
+
+:CHECK_LIBRARIES
+REM Check if all required libraries are already installed
+"%RUN_PYTHON%" -c "import streamlit, mediapipe, cv2, edge_tts, google.genai, numpy, pandas, openpyxl" >nul 2>nul
+if %errorlevel% equ 0 (
+    REM All libraries found, start application directly
+    goto START_APP
+)
+
+echo.
+echo Missing required libraries Streamlit, MediaPipe, OpenCV, etc.
+choice /C YN /M "必要な依存ライブラリのダウンロードとインストールを開始しますか？"
+if %errorlevel% neq 1 (
+    echo.
+    echo セットアップがキャンセルされました。プログラムを終了します。
+    pause
+    exit /b
+)
+
+echo.
+echo Installing libraries...
+if "%RUN_PYTHON%"=="python3.12" (
+    python3.12 -m pip install --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
+) else (
+    "%ENV_DIR%\Scripts\pip.exe" install --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
+)
+
+if %errorlevel% neq 0 (
+    echo [Error] Failed to install libraries.
+    goto ERROR_EXIT
+)
+
 
 :START_APP
 cd /d "%~dp0app"
 set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-if "%RUN_PYTHON%"=="python3.12" (
-    python3.12 -m pip install --quiet --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
-    python3.12 -m streamlit run main.py
-) else (
-    "%RUN_PYTHON%" -m streamlit run main.py
-)
+"%RUN_PYTHON%" -m streamlit run main.py
 pause
 exit /b
+
 
 :ERROR_EXIT
 echo.
