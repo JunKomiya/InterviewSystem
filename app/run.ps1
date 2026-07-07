@@ -1,3 +1,6 @@
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "  AI面接練習システム を起動しています..." -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
@@ -8,17 +11,24 @@ $RUN_PYTHON = ""
 
 # 1. システムに既に Python 3.12 がインストールされているかチェック
 if (Get-Command "python3.12" -ErrorAction SilentlyContinue) {
-    Write-Host "システム上の Python 3.12 を使用して起動します..." -ForegroundColor Green
     $RUN_PYTHON = "python3.12"
 }
 # 2. システムに Python 3.12 はないが、過去に作成したポータブル環境があるかチェック
 elseif (Test-Path $PYTHON_EXE) {
-    Write-Host "同梱のポータブル Python 環境を使用して起動します..." -ForegroundColor Green
     $RUN_PYTHON = $PYTHON_EXE
 }
-# 3. ポータブル環境の自動構築
-else {
+
+# 3. ポータブル環境の自動構築（Pythonもポータブル環境もない場合）
+if ($RUN_PYTHON -eq "") {
     Write-Host "Python 3.12 が見つかりません。" -ForegroundColor Yellow
+    
+    $confirm = Read-Host "実行に必要な Python 3.12 およびライブラリが見つかりません。自動セットアップ（ダウンロードとインストール）を開始しますか？ (Y/N)"
+    if ($confirm -notmatch "^[yY]$") {
+        Write-Host "セットアップがキャンセルされました。プログラムを終了します。" -ForegroundColor Yellow
+        Read-Host "終了するには Enter キーを押してください..."
+        exit
+    }
+
     Write-Host "ポータブル環境の自動構築を開始します（初回のみ数分かかります）..." -ForegroundColor Yellow
     Write-Host ""
 
@@ -76,14 +86,37 @@ else {
     Write-Host "==================================================" -ForegroundColor Green
     Write-Host ""
     $RUN_PYTHON = $PYTHON_EXE
+} else {
+    # すでにインストールされているライブラリを確認
+    Write-Host "環境の確認中..." -ForegroundColor Cyan
+    & $RUN_PYTHON -c "import streamlit, mediapipe, cv2, edge_tts, google.genai, numpy, pandas, openpyxl" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "必要な依存ライブラリの一部が不足しています。" -ForegroundColor Yellow
+        $confirm = Read-Host "必要な依存ライブラリのダウンロードとインストールを開始しますか？ (Y/N)"
+        if ($confirm -notmatch "^[yY]$") {
+            Write-Host "セットアップがキャンセルされました。プログラムを終了します。" -ForegroundColor Yellow
+            Read-Host "終了するには Enter キーを押してください..."
+            exit
+        }
+
+        Write-Host "ライブラリをインストール中..." -ForegroundColor Yellow
+        if ($RUN_PYTHON -eq "python3.12") {
+            python3.12 -m pip install --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
+        } else {
+            $PIP_EXE = Join-Path $ENV_DIR "Scripts\pip.exe"
+            & $PIP_EXE install --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[エラー] ライブラリのインストールに失敗しました。" -ForegroundColor Red
+            Read-Host "続行するには Enter キーを押してください..."
+            exit
+        }
+    } else {
+        Write-Host "すべての依存ライブラリが確認できました。" -ForegroundColor Green
+    }
 }
 
 # 4. 起動処理
 $env:PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION="python"
-if ($RUN_PYTHON -eq "python3.12") {
-    python3.12 -m pip install --quiet --prefer-binary --no-compile -i https://mirrors.aliyun.com/pypi/simple/ streamlit mediapipe==0.10.14 opencv-python edge-tts google-genai numpy pandas openpyxl
-    python3.12 -m streamlit run main.py
-} else {
-    & $RUN_PYTHON -m streamlit run main.py
-}
-
+& $RUN_PYTHON -m streamlit run main.py
