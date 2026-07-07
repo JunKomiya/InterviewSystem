@@ -28,6 +28,17 @@ st.set_page_config(
 # 起動直後にCSSをロード
 load_css()
 
+# カスタムローディング画面のHTMLを挿入
+st.markdown("""
+<div class="custom-loader-overlay">
+    <div class="custom-loader-card">
+        <div class="custom-loader-spinner"></div>
+        <div class="custom-loader-text">処理を実行中...</div>
+        <div class="custom-loader-subtext">このまましばらくお待ちください</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 # セッション状態の初期化と初回ローディング画面
 init_session()
 
