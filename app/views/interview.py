@@ -313,7 +313,11 @@ def render_interview_view():
                                 eval_text=st.session_state.eval_text,
                                 user_answer_1=st.session_state.user_answer_1,
                                 user_answer_2=st.session_state.user_answer_2,
-                                created_at=time.strftime('%Y-%m-%d %H:%M:%S'),
+                                final_academic_background=st.session_state.get("final_academic_background", ""),
+                                tech_skills=st.session_state.get("tech_skills", ""),
+                                qualifications=st.session_state.get("qualifications", ""),
+                                experienced_processes=", ".join(st.session_state.get("experienced_processes", [])),
+                                experienced_processes_content=st.session_state.get("experienced_processes_content", ""),
                                 use_camera=1 if st.session_state.get("use_camera", True) else 0
                             )
                             
