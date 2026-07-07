@@ -14,9 +14,11 @@ from src.gaze_tracker import (
     collect_calibration_sample
 )
 
+
 def reset_dialog_state():
     st.session_state.show_calib_dialog = False
     st.session_state.calib_wizard_step = 1
+
 
 @st.dialog("📐 視線キャリブレーション", width="large", on_dismiss=reset_dialog_state)
 def run_calibration_dialog():
@@ -26,7 +28,7 @@ def run_calibration_dialog():
         st.session_state.calib_center_res = None
     if "calib_limit_res" not in st.session_state:
         st.session_state.calib_limit_res = None
-        
+
     if st.session_state.calib_wizard_step == 1:
         st.session_state.calib_wizard_step = 2
 
@@ -43,7 +45,7 @@ def run_calibration_dialog():
             """,
             unsafe_allow_html=True
         )
-        
+
         col_btn1, col_btn2 = st.columns([2, 1])
         with col_btn1:
             if st.button("正面サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step3", type="primary"):
@@ -54,7 +56,7 @@ def run_calibration_dialog():
                 st.session_state.calib_wizard_step = 1
                 st.session_state.show_calib_dialog = False
                 st.rerun()
-                
+
     elif st.session_state.calib_wizard_step == 3:
         countdown_placeholder = st.empty()
         for i in range(3, 0, -1):
@@ -72,7 +74,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             time.sleep(1.0)
-        
+
         countdown_placeholder.markdown(
             """
             <div class="calib-container">
@@ -86,21 +88,23 @@ def run_calibration_dialog():
             """,
             unsafe_allow_html=True
         )
-        
-        res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
+
+        res = collect_calibration_sample(
+            st.session_state.camera_index, duration=2.0)
         countdown_placeholder.empty()
-        
+
         if res:
             st.session_state.calib_center_res = res
         else:
             st.session_state.calib_center_res = None
         st.session_state.calib_wizard_step = 4
         st.rerun()
-            
+
     elif st.session_state.calib_wizard_step == 4:
         st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-        st.markdown('<div class="calib-step-indicator">ステップ 4 / 8: 正面データ解析</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="calib-step-indicator">ステップ 4 / 8: 正面データ解析</div>', unsafe_allow_html=True)
+
         res = st.session_state.calib_center_res
         if res:
             st.markdown(
@@ -114,7 +118,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("次へ（よそ見限界の調整）", use_container_width=True, key="btn_go_step5", type="primary"):
@@ -137,7 +141,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step4_err", type="primary"):
@@ -150,7 +154,7 @@ def run_calibration_dialog():
                     st.session_state.calib_center_res = None
                     st.session_state.show_calib_dialog = False
                     st.rerun()
-                    
+
     elif st.session_state.calib_wizard_step == 5:
         st.markdown(
             """
@@ -164,7 +168,7 @@ def run_calibration_dialog():
             """,
             unsafe_allow_html=True
         )
-        
+
         col_btn1, col_btn2 = st.columns([2, 1])
         with col_btn1:
             if st.button("よそ見サンプリング（データ集め）を開始する", use_container_width=True, key="btn_go_step6", type="primary"):
@@ -174,7 +178,7 @@ def run_calibration_dialog():
             if st.button("戻る", use_container_width=True, key="btn_back_step5"):
                 st.session_state.calib_wizard_step = 4
                 st.rerun()
-                
+
     elif st.session_state.calib_wizard_step == 6:
         countdown_placeholder = st.empty()
         for i in range(3, 0, -1):
@@ -192,7 +196,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             time.sleep(1.0)
-        
+
         countdown_placeholder.markdown(
             """
             <div class="calib-container">
@@ -206,21 +210,23 @@ def run_calibration_dialog():
             """,
             unsafe_allow_html=True
         )
-        
-        res = collect_calibration_sample(st.session_state.camera_index, duration=2.0)
+
+        res = collect_calibration_sample(
+            st.session_state.camera_index, duration=2.0)
         countdown_placeholder.empty()
-        
+
         if res:
             st.session_state.calib_limit_res = res
         else:
             st.session_state.calib_limit_res = None
         st.session_state.calib_wizard_step = 7
         st.rerun()
-            
+
     elif st.session_state.calib_wizard_step == 7:
         st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-        st.markdown('<div class="calib-step-indicator">ステップ 7 / 8: よそ見データ解析</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="calib-step-indicator">ステップ 7 / 8: よそ見データ解析</div>', unsafe_allow_html=True)
+
         res = st.session_state.calib_limit_res
         if res:
             st.markdown(
@@ -234,7 +240,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("次へ（結果の確認・適用）", use_container_width=True, key="btn_go_step8", type="primary"):
@@ -257,7 +263,7 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("もう一度サンプリングする", use_container_width=True, key="btn_retry_step7_err", type="primary"):
@@ -270,11 +276,12 @@ def run_calibration_dialog():
                     st.session_state.calib_limit_res = None
                     st.session_state.show_calib_dialog = False
                     st.rerun()
-                    
+
     elif st.session_state.calib_wizard_step == 8:
         st.markdown('<div class="calib-container">', unsafe_allow_html=True)
-        st.markdown('<div class="calib-step-indicator">ステップ 8 / 8: 結果出力・許容値更新</div>', unsafe_allow_html=True)
-        
+        st.markdown(
+            '<div class="calib-step-indicator">ステップ 8 / 8: 結果出力・許容値更新</div>', unsafe_allow_html=True)
+
         if not st.session_state.calib_center_res or not st.session_state.calib_limit_res:
             st.warning("キャリブレーションデータが不足しています。最初からやり直してください。")
             if st.button("最初に戻る", use_container_width=True):
@@ -285,16 +292,16 @@ def run_calibration_dialog():
         else:
             cx, cy = st.session_state.calib_center_res
             lx, ly = st.session_state.calib_limit_res
-            
+
             h_diff = abs(lx - cx)
             v_diff = abs(ly - cy)
-            
+
             h_margin = max(0.04, min(0.22, h_diff))
             v_margin = max(0.04, min(0.22, v_diff))
-            
+
             new_h_range = (round(cx - h_margin, 2), round(cx + h_margin, 2))
             new_v_range = (round(cy - v_margin, 2), round(cy + v_margin, 2))
-            
+
             st.markdown(
                 f"""
                 <div style="text-align: left; width: 100%; padding: 10px 20px;">
@@ -326,18 +333,18 @@ def run_calibration_dialog():
                 unsafe_allow_html=True
             )
             st.markdown('</div>', unsafe_allow_html=True)
-            
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 if st.button("💾 この設定を適用して終了する", use_container_width=True, key="btn_apply_calib_finish", type="primary"):
                     st.session_state.h_range = new_h_range
                     st.session_state.v_range = new_v_range
-                    
+
                     st.session_state.calib_wizard_step = 1
                     st.session_state.calib_center_res = None
                     st.session_state.calib_limit_res = None
                     st.session_state.show_calib_dialog = False
-                    
+
                     st.toast("🎯 新しい視線許容範囲を適用しました！")
                     st.rerun()
             with col_btn2:
@@ -348,9 +355,10 @@ def run_calibration_dialog():
                     st.session_state.show_calib_dialog = False
                     st.rerun()
 
+
 def render_options_section():
     st.markdown("システムの動作環境（デバイス、各種機能のオン/オフおよびパラメータ）を調整します。")
-    
+
     st.markdown("### 🔊 サウンド設定 (スピーカーの選択)")
     with st.container(border=True):
         try:
@@ -366,15 +374,15 @@ def render_options_section():
             speaker_options = list(dict.fromkeys(speaker_options))
         except Exception:
             speaker_options = ["既定のスピーカー (システム設定に従う)"]
-            
+
         if not speaker_options:
             speaker_options = ["既定のスピーカー (システム設定に従う)"]
-            
+
         if "selected_speaker" not in st.session_state:
             st.session_state.selected_speaker = speaker_options[0]
         elif st.session_state.selected_speaker not in speaker_options:
             st.session_state.selected_speaker = speaker_options[0]
-            
+
         selected_speaker = st.selectbox(
             "音声の再生に使用するスピーカーを選択してください",
             options=speaker_options,
@@ -382,14 +390,14 @@ def render_options_section():
             key="speaker_selectbox"
         )
         st.session_state.selected_speaker = selected_speaker
-        
+
         # Inject JavaScript to set the sink ID of all audio elements in the browser
         safe_speaker = selected_speaker.replace("'", "\\'")
         st.components.v1.html(
             f"""
             <script>
             const selectedLabel = '{safe_speaker}';
-            
+          
             function updateSinkId() {{
                 if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
                 navigator.mediaDevices.enumerateDevices().then(devices => {{
@@ -398,7 +406,7 @@ def render_options_section():
                     if (!targetDevice) {{
                         targetDevice = audiooutput.find(d => d.label.includes(selectedLabel) || selectedLabel.includes(d.label));
                     }}
-                    
+                  
                     if (targetDevice) {{
                         const parentDoc = window.parent.document;
                         const audios = parentDoc.querySelectorAll('audio');
@@ -420,22 +428,42 @@ def render_options_section():
             height=0,
             width=0
         )
-        
-        st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 10px 0;'>", unsafe_allow_html=True)
-        st.toggle("音声認識を利用する (リアルタイム文字起こしと回答分析)", value=False, disabled=True, help="今後のアップデートで追加予定の機能です。")
-        st.caption("※ 現在はご利用いただけません。 (将来の拡張用)")
-        
-    st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
-    
+
+        if "use_speech_recognition" not in st.session_state:
+            st.session_state.use_speech_recognition = False
+
+        speech_available = st.session_state.get("mode") == "AI" and bool(
+            st.session_state.get("api_key", "").strip())
+
+        use_speech_recognition = st.toggle(
+            "音声認識を利用する",
+            value=st.session_state.use_speech_recognition,
+            key="toggle_use_speech_recognition",
+            disabled=not speech_available,
+            help="マイクで録音した回答をGeminiで文字起こしし、回答欄に反映します。AIモードとAPIキーが必要です。"
+        )
+
+        st.session_state.use_speech_recognition = use_speech_recognition
+
+        if not speech_available:
+            st.caption(
+                "※ 音声認識を利用するには、AIモードを選択し、Google AI Studio APIキーを設定してください。")
+        else:
+            st.caption("※ 面接画面でマイク録音による文字起こしが利用できます。文字起こし後に内容を編集して送信できます。")
+
+    st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>",
+                unsafe_allow_html=True)
+
     st.markdown("### 👁️ 視線・表情検知の設定")
-    
+
     # 「カメラを利用する」トグル
     if "use_camera" not in st.session_state:
         st.session_state.use_camera = True
-        
-    use_camera = st.toggle("カメラを利用する (視線トラッキング)", value=st.session_state.use_camera, key="toggle_use_camera")
+
+    use_camera = st.toggle(
+        "カメラを利用する (視線トラッキング)", value=st.session_state.use_camera, key="toggle_use_camera")
     st.session_state.use_camera = use_camera
-    
+
     if use_camera:
         with st.container(border=True):
             st.subheader("📹 カメラ設定")
@@ -443,11 +471,12 @@ def render_options_section():
             with col_cam_sel:
                 cam_options = st.session_state.available_cameras
                 cam_labels = [f"カメラ {i}" for i in cam_options]
-                
+
                 default_sel_idx = 0
                 if st.session_state.camera_index in cam_options:
-                    default_sel_idx = cam_options.index(st.session_state.camera_index)
-                
+                    default_sel_idx = cam_options.index(
+                        st.session_state.camera_index)
+
                 selected_cam_idx = st.selectbox(
                     "使用するカメラを選択",
                     options=range(len(cam_options)),
@@ -456,11 +485,11 @@ def render_options_section():
                     key="dialog_camera_selectbox"
                 )
                 st.session_state.camera_index = cam_options[selected_cam_idx]
-                
+
             with col_cam_scan:
-                          st.subheader("📐 視線許容範囲の自動調整 (キャリブレーション)")
+                st.subheader("📐 視線許容範囲の自動調整 (キャリブレーション)")
             st.markdown("カメラを実際に見つめて、あなたの目線の動きに合わせた最適な許容範囲を自動計測します。")
-            
+
             # ダイアログ表示用の初期化
             if "show_calib_dialog" not in st.session_state:
                 st.session_state.show_calib_dialog = False
@@ -480,12 +509,13 @@ def render_options_section():
 
             if st.session_state.get("show_calib_dialog", False):
                 run_calibration_dialog()
-                    
-            st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
-            
+
+            st.markdown(
+                "<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
+
             st.subheader("⚙️ 視線判定しきい値の調整")
             st.markdown("数値範囲を狭くすると判定が厳しくなり、広くすると甘くなります。")
-            
+
             h_range = st.slider(
                 "水平方向の許容範囲 (左右の目線そらしの感度)",
                 min_value=0.20,
@@ -495,7 +525,7 @@ def render_options_section():
                 key="dialog_h_range_slider"
             )
             st.session_state.h_range = h_range
-            
+
             v_range = st.slider(
                 "垂直方向の許容範囲 (上下の目線そらしの感度)",
                 min_value=0.20,
@@ -505,9 +535,9 @@ def render_options_section():
                 key="dialog_v_range_slider"
             )
             st.session_state.v_range = v_range
-            
+
             st.markdown("<br>", unsafe_allow_html=True)
-            
+
             # リアルタイム診断モードのトグル
             is_calib_active = st.session_state.get("show_calib_dialog", False)
             live_cam_active = st.checkbox(
@@ -516,20 +546,21 @@ def render_options_section():
                 key="dialog_live_cam_checkbox",
                 disabled=is_calib_active
             )
-            
+
             if live_cam_active and not is_calib_active:
                 import cv2
                 import mediapipe as mp
                 import platform
                 if platform.system() == "Windows":
-                    cap = cv2.VideoCapture(st.session_state.camera_index, cv2.CAP_DSHOW)
+                    cap = cv2.VideoCapture(
+                        st.session_state.camera_index, cv2.CAP_DSHOW)
                 else:
                     cap = cv2.VideoCapture(st.session_state.camera_index)
                 if not cap.isOpened():
                     st.error("カメラデバイスを開くことができませんでした。")
                 else:
                     frame_placeholder = st.empty()
-                    
+
                     mp_face_mesh = mp.solutions.face_mesh
                     mp_active = True
                     face_mesh = None
@@ -543,64 +574,71 @@ def render_options_section():
                     except Exception as e:
                         mp_active = False
                         st.warning(f"目線解析モデルの初期化に失敗しました: {e}")
-                    
+
                     try:
                         trail_points = []
                         while live_cam_active:
                             ret, frame = cap.read()
                             if not ret:
                                 break
-                            
+
                             frame = cv2.flip(frame, 1)
                             h, w, c = frame.shape
-                            
+
                             gaze_x_compensated, gaze_y_compensated = 0.5, 0.5
                             looking_away = False
                             is_blink = False
-                            
+
                             if mp_active and face_mesh is not None:
                                 try:
-                                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                    rgb_frame = cv2.cvtColor(
+                                        frame, cv2.COLOR_BGR2RGB)
                                     results = face_mesh.process(rgb_frame)
                                     if results.multi_face_landmarks:
                                         landmarks = results.multi_face_landmarks[0].landmark
-                                        
+
                                         # 特徴量の解析
-                                        gaze_x, gaze_y, ear, yaw, pitch, is_blink = analyze_face_features(landmarks)
-                                        
+                                        gaze_x, gaze_y, ear, yaw, pitch, is_blink = analyze_face_features(
+                                            landmarks)
+
                                         if is_blink:
                                             gaze_x_compensated, gaze_y_compensated = 0.5, 0.5
                                             looking_away = False
                                             trail_points.append(None)
                                         else:
                                             gaze_x_compensated = gaze_x + 0.25 * yaw
-                                            gaze_y_compensated = gaze_y + 0.25 * (pitch - 0.5)
-                                            
+                                            gaze_y_compensated = gaze_y + \
+                                                0.25 * (pitch - 0.5)
+
                                             if not (st.session_state.h_range[0] <= gaze_x_compensated <= st.session_state.h_range[1]) or not (st.session_state.v_range[0] <= gaze_y_compensated <= st.session_state.v_range[1]):
                                                 looking_away = True
-                                                
+
                                             pt_left = landmarks[468]
                                             pt_right = landmarks[473]
-                                            mx = int((pt_left.x + pt_right.x) / 2.0 * w)
-                                            my = int((pt_left.y + pt_right.y) / 2.0 * h)
+                                            mx = int(
+                                                (pt_left.x + pt_right.x) / 2.0 * w)
+                                            my = int(
+                                                (pt_left.y + pt_right.y) / 2.0 * h)
                                             trail_points.append((mx, my))
-                                                
+
                                         if is_blink:
                                             color = (255, 165, 0)
                                         else:
-                                            color = (0, 0, 255) if looking_away else (0, 255, 0)
-                                            
-                                        draw_face_landmarks(frame, landmarks, color, is_blink)
+                                            color = (0, 0, 255) if looking_away else (
+                                                0, 255, 0)
+
+                                        draw_face_landmarks(
+                                            frame, landmarks, color, is_blink)
                                     else:
                                         trail_points.append(None)
                                 except Exception:
                                     trail_points.append(None)
                             else:
                                 trail_points.append(None)
-                                
+
                             if len(trail_points) > 40:
                                 trail_points.pop(0)
-                                
+
                             num_pts = len(trail_points)
                             if num_pts > 1:
                                 for i in range(num_pts - 1):
@@ -613,7 +651,7 @@ def render_options_section():
                                     g = int(40 * (1 - alpha) + 206 * alpha)
                                     r = int(121 * (1 - alpha) + 0 * alpha)
                                     cv2.line(frame, p1, p2, (b, g, r), 3)
-                            
+
                             dot_color = draw_radar_overlay(
                                 frame=frame,
                                 gaze_x_compensated=gaze_x_compensated,
@@ -622,18 +660,22 @@ def render_options_section():
                                 is_calibrating=False,
                                 looking_away=looking_away
                             )
-                            
+
                             if is_blink:
                                 status_txt = "BLINKING"
                             else:
                                 status_txt = "LOOKING AWAY (OUT OF RANGE)" if looking_away else "LOOKING AT SCREEN (OK)"
-                            cv2.putText(frame, status_txt, (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.55, dot_color, 2)
-                            cv2.putText(frame, f"Gaze X: {gaze_x_compensated:.3f} (Limit: {st.session_state.h_range[0]:.2f} - {st.session_state.h_range[1]:.2f})", (15, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
-                            cv2.putText(frame, f"Gaze Y: {gaze_y_compensated:.3f} (Limit: {st.session_state.v_range[0]:.2f} - {st.session_state.v_range[1]:.2f})", (15, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+                            cv2.putText(frame, status_txt, (15, 30),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, dot_color, 2)
+                            cv2.putText(frame, f"Gaze X: {gaze_x_compensated:.3f} (Limit: {st.session_state.h_range[0]:.2f} - {st.session_state.h_range[1]:.2f})", (
+                                15, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
+                            cv2.putText(frame, f"Gaze Y: {gaze_y_compensated:.3f} (Limit: {st.session_state.v_range[0]:.2f} - {st.session_state.v_range[1]:.2f})", (
+                                15, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 255, 255), 1)
                             cv2.rectangle(frame, (0, 0), (w, h), dot_color, 6)
-                            
+
                             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                            frame_placeholder.image(frame_rgb, caption="リアルタイム目線追跡プレビュー", use_container_width=True)
+                            frame_placeholder.image(
+                                frame_rgb, caption="リアルタイム目線追跡プレビュー", use_container_width=True)
                             time.sleep(0.04)
                     finally:
                         if face_mesh is not None:
@@ -642,71 +684,90 @@ def render_options_section():
                         frame_placeholder.empty()
 
 
-
-
 def render_setup_view():
     # 2カラムレイアウトで表示
     col_setup_left, col_setup_right = st.columns([1, 1], gap="large")
-    
+
     with col_setup_left:
         with st.container(border=True):
-            st.markdown('<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
             st.subheader("📝 エントリーシート（ES）の入力")
-            
+
             # 入力方式の選択
             es_input_method = st.radio(
                 "ES入力方法を選択してください",
                 ["手動入力", "Excelアップロード (skillsheet.xlsx)"],
-                index=0 if st.session_state.get("es_input_method", "MANUAL") == "MANUAL" else 1,
+                index=0 if st.session_state.get(
+                    "es_input_method", "MANUAL") == "MANUAL" else 1,
                 horizontal=True
             )
             st.session_state.es_input_method = "MANUAL" if es_input_method == "手動入力" else "EXCEL"
-            
+
             st.markdown("---")
-            
+
             # 希望する職種 (両モード共通)
-            job_options = ["技術職 (エンジニア)", "総合職・営業職", "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
+            job_options = ["技術職 (エンジニア)", "総合職・営業職",
+                           "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
             job_index = 0
             if st.session_state.job_type in job_options:
                 job_index = job_options.index(st.session_state.job_type)
-            
-            job_selection = st.selectbox("希望する職種", job_options, index=job_index)
-            
+
+            job_selection = st.selectbox(
+                "希望する職種", job_options, index=job_index)
+
             if job_selection == "その他（自由記入）":
-                custom_job = st.text_input("職種名を入力してください（例: デザイナー、データサイエンティスト）")
+                custom_job = st.text_input(
+                    "職種名を入力してください（例: デザイナー、データサイエンティスト）")
                 st.session_state.job_type = custom_job.strip() if custom_job else ""
             else:
                 st.session_state.job_type = job_selection
-                
+
             st.markdown("<br>", unsafe_allow_html=True)
 
             if st.session_state.es_input_method == "MANUAL":
-                name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
-                final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
-                
-                tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
-                qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
-                
+                name_input = st.text_input(
+                    "お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
+                final_academic_background = st.text_input(
+                    "最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
+
+                tech_skills = st.text_area(
+                    "技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
+                qualifications = st.text_area(
+                    "資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
+
                 st.write("**経験工程 (複数選択可)**")
                 col_p1, col_p2, col_p3 = st.columns(3)
                 with col_p1:
-                    p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
-                    p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
+                    p_req = st.checkbox(
+                        "要件定義", value="要件定義" in st.session_state.experienced_processes)
+                    p_basic = st.checkbox(
+                        "基本設計", value="基本設計" in st.session_state.experienced_processes)
                 with col_p2:
-                    p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
-                    p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
+                    p_detail = st.checkbox(
+                        "詳細設計", value="詳細設計" in st.session_state.experienced_processes)
+                    p_code = st.checkbox(
+                        "実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
                 with col_p3:
-                    p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
-                    p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
-                
+                    p_test = st.checkbox(
+                        "テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
+                    p_maint = st.checkbox(
+                        "運用保守", value="運用保守" in st.session_state.experienced_processes)
+
                 selected_processes = []
-                if p_req: selected_processes.append("要件定義")
-                if p_basic: selected_processes.append("基本設計")
-                if p_detail: selected_processes.append("詳細設計")
-                if p_code: selected_processes.append("実装・プログラミング")
-                if p_test: selected_processes.append("テスト・単体検証")
-                if p_maint: selected_processes.append("運用保守")
-                
+                if p_req:
+                    selected_processes.append("要件定義")
+                if p_basic:
+                    selected_processes.append("基本設計")
+                if p_detail:
+                    selected_processes.append("詳細設計")
+                if p_code:
+                    selected_processes.append("実装・プログラミング")
+                if p_test:
+                    selected_processes.append("テスト・単体検証")
+                if p_maint:
+                    selected_processes.append("運用保守")
+
                 experienced_processes_content = st.text_area(
                     "経験した工程の具体的な内容",
                     placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
@@ -716,18 +777,18 @@ def render_setup_view():
             else:
                 # Excelアップロードモード
                 uploaded_file = st.file_uploader(
-                    "技術経歴書 (skillsheet.xlsx) をアップロードしてください", 
+                    "技術経歴書 (skillsheet.xlsx) をアップロードしてください",
                     type=["xlsx", "xls"],
                     help="アップロードされたファイルからプロフィールやスキル、職務経歴が自動抽出されます。"
                 )
-                
+
                 if uploaded_file is not None:
                     try:
                         parsed_data = parse_excel_skillsheet(uploaded_file)
                         st.session_state.excel_parsed_data = parsed_data
-                        
+
                         st.success("✓ Excelファイルの解析に成功しました！")
-                        
+
                         # 解析データのプレビューをリッチに表示
                         st.markdown(f"""
                         <div style="background-color: rgba(13, 148, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(13, 148, 136, 0.2); margin-top: 10px; margin-bottom: 15px;">
@@ -774,16 +835,17 @@ def render_setup_view():
 
     with col_setup_right:
         with st.container(border=True):
-            st.markdown('<div class="glass-card-marker height-100-marker" style="display:none;"></div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="glass-card-marker height-100-marker" style="display:none;"></div>', unsafe_allow_html=True)
             st.subheader("⚙️ 動作・API設定")
-            
+
             mode_selection = st.radio(
                 "システム動作モードを選択してください",
                 ["AIモード (Google AI Studio連携)", "モックモード (オフラインデモ)"],
                 index=0 if st.session_state.mode == "AI" else 1
             )
             st.session_state.mode = "AI" if "AIモード" in mode_selection else "MOCK"
-            
+
             if st.session_state.mode == "AI":
                 env_key_exists = "GEMINI_API_KEY" in os.environ
                 help_txt = "環境変数 GEMINI_API_KEY が検出されました。入力しなくても動作可能です。" if env_key_exists else "Google AI StudioのAPIキーを入力してください。"
@@ -794,23 +856,28 @@ def render_setup_view():
                     gemini_key = st.text_input(
                         "Google AI Studio APIキー",
                         type="password",
-                        value=st.session_state.api_key if st.session_state.api_key else os.environ.get("GEMINI_API_KEY", ""),
+                        value=st.session_state.api_key if st.session_state.api_key else os.environ.get(
+                            "GEMINI_API_KEY", ""),
                         placeholder="AI Studio API Key (AIモードに必須)",
                         help=help_txt
                     )
                     st.session_state.api_key = gemini_key.strip()
                     # インタビュアークラスのインスタンス化または更新
                     if st.session_state.api_key or os.environ.get("GEMINI_API_KEY"):
-                        st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                        st.session_state.interviewer = GeminiInterviewer(
+                            st.session_state.api_key)
                 with col_btn:
-                    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True) # 余白合わせ
+                    st.markdown("<div style='height:28px;'></div>",
+                                unsafe_allow_html=True)  # 余白合わせ
                     if st.button("🔑 接続テスト"):
                         with st.spinner("API接続確認中..."):
                             if not st.session_state.get("interviewer"):
-                                st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key)
+                                st.session_state.interviewer = GeminiInterviewer(
+                                    st.session_state.api_key)
                             success, msg = st.session_state.interviewer.verify_connection()
-                            st.session_state.api_test_result = {"success": success, "msg": msg}
-                
+                            st.session_state.api_test_result = {
+                                "success": success, "msg": msg}
+
                 # API接続テスト結果の表示
                 if st.session_state.api_test_result:
                     res = st.session_state.api_test_result
@@ -820,7 +887,7 @@ def render_setup_view():
                         st.error(res["msg"])
             else:
                 st.info("オフラインデモ用のモックモードで動作します。APIキーは不要です。")
-                
+
             with st.expander("⚙️ 環境設定・オプション", expanded=True):
                 render_options_section()
 
@@ -828,75 +895,89 @@ def render_setup_view():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
     st.subheader("📊 過去の面接履歴")
-    
+
     # 入力された、またはExcelから読み取られた名前を取得
     current_name = ""
     if st.session_state.get("es_input_method", "MANUAL") == "EXCEL":
         if st.session_state.get("excel_parsed_data"):
-            current_name = st.session_state.excel_parsed_data.get("name", "").strip()
+            current_name = st.session_state.excel_parsed_data.get(
+                "name", "").strip()
     else:
         current_name = name_input.strip() if 'name_input' in locals() else ""
 
     if current_name:
         history = get_interview_history(current_name)
         if history:
-            st.markdown(f"**{current_name}** さんの過去の面接結果 ({len(history)}件) です。クリックして詳細を展開できます。")
+            st.markdown(
+                f"**{current_name}** さんの過去の面接結果 ({len(history)}件) です。クリックして詳細を展開できます。")
             for item in history:
                 created_at = item.get("created_at", "")
                 job_type = item.get("job_type", "")
                 overall_score = item.get("overall_score", 0)
                 rank = item.get("rank", "D")
-                
+
                 expander_label = f"📅 {created_at} | 職種: {job_type} | 判定: 【{rank}】 {overall_score}点"
                 with st.expander(expander_label):
                     had_camera = item.get("use_camera", 1) == 1
-                    
+
                     if had_camera:
                         h_col1, h_col2, h_col3 = st.columns(3)
                         with h_col1:
-                            st.metric("一貫性", f"{item.get('consistency_score', 0)}点")
+                            st.metric(
+                                "一貫性", f"{item.get('consistency_score', 0)}点")
                         with h_col2:
-                            st.metric("回答品質", f"{item.get('content_quality_score', 0)}点")
+                            st.metric(
+                                "回答品質", f"{item.get('content_quality_score', 0)}点")
                         with h_col3:
-                            st.metric("視線安定度", f"{item.get('eye_contact_score', 0)}点")
+                            st.metric(
+                                "視線安定度", f"{item.get('eye_contact_score', 0)}点")
                     else:
                         h_col1, h_col2 = st.columns(2)
                         with h_col1:
-                            st.metric("一貫性", f"{item.get('consistency_score', 0)}点")
+                            st.metric(
+                                "一貫性", f"{item.get('consistency_score', 0)}点")
                         with h_col2:
-                            st.metric("回答品質", f"{item.get('content_quality_score', 0)}点")
-                    
+                            st.metric(
+                                "回答品質", f"{item.get('content_quality_score', 0)}点")
+
                     st.markdown("**🤖 面接官ナナミからの評価フィードバック:**")
                     st.info(item.get("eval_text", ""))
-                    
+
                     ans_col1, ans_col2 = st.columns(2)
                     with ans_col1:
                         st.markdown("**💬 第1問回答:**")
-                        st.write(item.get("user_answer_1", "") if item.get("user_answer_1") else "（記録なし）")
+                        st.write(item.get("user_answer_1", "")
+                                 if item.get("user_answer_1") else "（記録なし）")
                     with ans_col2:
                         st.markdown("**💬 第2問回答 (深掘り):**")
-                        st.write(item.get("user_answer_2", "") if item.get("user_answer_2") else "（記録なし）")
+                        st.write(item.get("user_answer_2", "")
+                                 if item.get("user_answer_2") else "（記録なし）")
         else:
-            st.info(f"**{current_name}** さんの過去の面接履歴は見つかりませんでした。最初の面接練習を開始して履歴を記録しましょう！")
+            st.info(
+                f"**{current_name}** さんの過去の面接履歴は見つかりませんでした。最初の面接練習を開始して履歴を記録しましょう！")
     else:
         st.warning("お名前を入力、または経歴書Excelをアップロードすると、過去の履歴が表示されます。")
 
     # 開始ボタンを全幅で配置（設定オプションは動作・API設定カード内へ移動）
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 面接練習を開始する", use_container_width=True):
-        excel_mode = st.session_state.get("es_input_method", "MANUAL") == "EXCEL"
+        excel_mode = st.session_state.get(
+            "es_input_method", "MANUAL") == "EXCEL"
         excel_data = st.session_state.get("excel_parsed_data")
-        
+
         if excel_mode and not excel_data:
             st.error("Excelファイルをアップロードして解析を完了させてください。")
         else:
             if excel_mode:
                 name = excel_data.get("name", "").strip()
-                final_academic_background = excel_data.get("final_academic_background", "").strip()
+                final_academic_background = excel_data.get(
+                    "final_academic_background", "").strip()
                 tech_skills = excel_data.get("tech_skills", "").strip()
                 qualifications = excel_data.get("qualifications", "").strip()
-                selected_processes = excel_data.get("experienced_processes", [])
-                experienced_processes_content = excel_data.get("experienced_processes_content", "").strip()
+                selected_processes = excel_data.get(
+                    "experienced_processes", [])
+                experienced_processes_content = excel_data.get(
+                    "experienced_processes_content", "").strip()
             else:
                 name = name_input.strip()
                 final_academic_background = final_academic_background.strip()
@@ -911,7 +992,7 @@ def render_setup_view():
                 st.error("AIモードで実行するには、APIキーを設定してください。")
             else:
                 cleanup_temp_files()
-                
+
                 # ES情報をセッションステートに保存
                 st.session_state.name = name
                 st.session_state.final_academic_background = final_academic_background
@@ -919,9 +1000,10 @@ def render_setup_view():
                 st.session_state.qualifications = qualifications
                 st.session_state.experienced_processes = selected_processes
                 st.session_state.experienced_processes_content = experienced_processes_content
-                
+
                 # 汎用の自己PR要約テキストを作成
-                processes_str = ", ".join(selected_processes) if selected_processes else "なし"
+                processes_str = ", ".join(
+                    selected_processes) if selected_processes else "なし"
                 st.session_state.es_pr = (
                     f"学歴: {st.session_state.final_academic_background}\n"
                     f"スキル: {st.session_state.tech_skills}\n"
@@ -929,7 +1011,7 @@ def render_setup_view():
                     f"経験工程: {processes_str}\n"
                     f"工程詳細: {st.session_state.experienced_processes_content}"
                 )
-                
+
                 st.session_state.es_data = {
                     "name": st.session_state.name,
                     "final_academic_background": st.session_state.final_academic_background,
@@ -939,7 +1021,7 @@ def render_setup_view():
                     "experienced_processes_content": st.session_state.experienced_processes_content,
                     "job_type": st.session_state.job_type
                 }
-                
+
                 # 視線トラッキングスレッドの開始 (Webカメラ起動、カメラが有効な場合のみ)
                 if st.session_state.get("use_camera", True):
                     st.session_state.recorder = GazeRecorder(
@@ -950,30 +1032,33 @@ def render_setup_view():
                     st.session_state.recorder.start()
                 else:
                     st.session_state.recorder = None
-                
+
                 q1_text = ""
-                
+
                 # --- 第一問生成 ---
                 if not st.session_state.get("interviewer"):
-                    st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
+                    st.session_state.interviewer = GeminiInterviewer(
+                        st.session_state.api_key, mode=st.session_state.mode)
                 else:
                     st.session_state.interviewer.mode = st.session_state.mode
                     st.session_state.interviewer.api_key = st.session_state.api_key
-                    
+
                 with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
-                    q1_text = st.session_state.interviewer.generate_first_question(st.session_state.es_data)
-                
+                    q1_text = st.session_state.interviewer.generate_first_question(
+                        st.session_state.es_data)
+
                 st.session_state.question_1 = q1_text
-                
+
                 # 音声ファイルを生成
                 timestamp = int(time.time())
-                filename = os.path.join(TEMP_DIR, f"temp_audio_q1_{timestamp}.mp3")
-                
+                filename = os.path.join(
+                    TEMP_DIR, f"temp_audio_q1_{timestamp}.mp3")
+
                 with st.spinner("面接官の音声（TTS）を生成中..."):
                     success = generate_tts(q1_text, filename)
                     if success:
                         st.session_state.audio_path = filename
-                    
+
                     # チャット履歴の初期化
                     st.session_state.chat_history = [{
                         "role": "interviewer",
@@ -983,4 +1068,3 @@ def render_setup_view():
                     st.session_state.current_audio_to_play = filename if success else None
                     st.session_state.step = "INTERVIEW"
                     st.rerun()
-
