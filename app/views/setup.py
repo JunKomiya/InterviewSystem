@@ -651,126 +651,79 @@ def render_setup_view():
     with col_setup_left:
         with st.container(border=True):
             st.markdown('<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
-            st.subheader("📝 エントリーシート（ES）の入力")
+            st.subheader("📝 経歴書のアップロードと案件情報の入力")
             
-            # 入力方式の選択
-            es_input_method = st.radio(
-                "ES入力方法を選択してください",
-                ["手動入力", "Excelアップロード (skillsheet.xlsx)"],
-                index=0 if st.session_state.get("es_input_method", "MANUAL") == "MANUAL" else 1,
-                horizontal=True
+            # 手入力は削除し、Excelアップロード固定とする
+            st.session_state.es_input_method = "EXCEL"
+            
+            # 案件情報の記入 (st.session_state.job_type に格納)
+            project_info = st.text_area(
+                "💼 案件情報（募集要項・仕事内容など）",
+                value=st.session_state.job_type if st.session_state.job_type else "",
+                placeholder="例:\n【業務内容】PythonおよびStreamlitを使用したWebアプリケーションの開発。\n【必須スキル】Pythonでの開発経験2年以上、SQLを用いたデータベース操作の実務経験。",
+                height=150
             )
-            st.session_state.es_input_method = "MANUAL" if es_input_method == "手動入力" else "EXCEL"
+            st.session_state.job_type = project_info.strip()
             
             st.markdown("---")
             
-            # 希望する職種 (両モード共通)
-            job_options = ["技術職 (エンジニア)", "総合職・営業職", "企画・マーケティング職", "事務・管理職", "その他（自由記入）"]
-            job_index = 0
-            if st.session_state.job_type in job_options:
-                job_index = job_options.index(st.session_state.job_type)
-            
-            job_selection = st.selectbox("希望する職種", job_options, index=job_index)
-            
-            if job_selection == "その他（自由記入）":
-                custom_job = st.text_input("職種名を入力してください（例: デザイナー、データサイエンティスト）")
-                st.session_state.job_type = custom_job.strip() if custom_job else ""
-            else:
-                st.session_state.job_type = job_selection
+            # Excelアップロードモード
+            uploaded_file = st.file_uploader(
+                "技術経歴書 (skillsheet.xlsx) をアップロードしてください", 
+                type=["xlsx", "xls"],
+                help="アップロードされたファイルからプロフィールやスキル、職務経歴が自動抽出されます。"
+            )
                 
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            if st.session_state.es_input_method == "MANUAL":
-                name_input = st.text_input("お名前", placeholder="例: 面接 太郎", value=st.session_state.name if st.session_state.name else "プロト 太郎")
-                final_academic_background = st.text_input("最終学歴", placeholder="例: 〇〇大学 〇〇学部 〇〇学科", value=st.session_state.final_academic_background)
-                
-                tech_skills = st.text_area("技術スキル (カンマ区切り)", placeholder="例: Java, SQL, Python, Git", value=st.session_state.tech_skills, height=80)
-                qualifications = st.text_area("資格名 (改行またはカンマ区切り)", placeholder="例: 基本情報技術者, 応用情報技術者", value=st.session_state.qualifications, height=80)
-                
-                st.write("**経験工程 (複数選択可)**")
-                col_p1, col_p2, col_p3 = st.columns(3)
-                with col_p1:
-                    p_req = st.checkbox("要件定義", value="要件定義" in st.session_state.experienced_processes)
-                    p_basic = st.checkbox("基本設計", value="基本設計" in st.session_state.experienced_processes)
-                with col_p2:
-                    p_detail = st.checkbox("詳細設計", value="詳細設計" in st.session_state.experienced_processes)
-                    p_code = st.checkbox("実装・プログラミング", value="実装・プログラミング" in st.session_state.experienced_processes)
-                with col_p3:
-                    p_test = st.checkbox("テスト・単体検証", value="テスト・単体検証" in st.session_state.experienced_processes)
-                    p_maint = st.checkbox("運用保守", value="運用保守" in st.session_state.experienced_processes)
-                
-                selected_processes = []
-                if p_req: selected_processes.append("要件定義")
-                if p_basic: selected_processes.append("基本設計")
-                if p_detail: selected_processes.append("詳細設計")
-                if p_code: selected_processes.append("実装・プログラミング")
-                if p_test: selected_processes.append("テスト・単体検証")
-                if p_maint: selected_processes.append("運用保守")
-                
-                experienced_processes_content = st.text_area(
-                    "経験した工程の具体的な内容",
-                    placeholder="例: Javaを用いたWebAPIの実装工程を担当し、単体テスト仕様書の作成および単体テストの実行を行いました。",
-                    value=st.session_state.experienced_processes_content,
-                    height=120
-                )
-            else:
-                # Excelアップロードモード
-                uploaded_file = st.file_uploader(
-                    "技術経歴書 (skillsheet.xlsx) をアップロードしてください", 
-                    type=["xlsx", "xls"],
-                    help="アップロードされたファイルからプロフィールやスキル、職務経歴が自動抽出されます。"
-                )
-                
-                if uploaded_file is not None:
-                    try:
-                        parsed_data = parse_excel_skillsheet(uploaded_file)
-                        st.session_state.excel_parsed_data = parsed_data
-                        
-                        st.success("✓ Excelファイルの解析に成功しました！")
-                        
-                        # 解析データのプレビューをリッチに表示
-                        st.markdown(f"""
-                        <div style="background-color: rgba(13, 148, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(13, 148, 136, 0.2); margin-top: 10px; margin-bottom: 15px;">
-                            <div style="font-weight: bold; color: #0d9488; font-size: 1.1rem; margin-bottom: 10px;">📋 解析された経歴書プレビュー</div>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
-                                <tr>
-                                    <td style="font-weight: bold; width: 30%; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">お名前:</td>
-                                    <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('name', '未記入')}</td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">最終学歴:</td>
-                                    <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('final_academic_background', '未記入')}</td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">技術スキル:</td>
-                                    <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('tech_skills', '未記入')}</td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">保有資格:</td>
-                                    <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('qualifications', '未記入')}</td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: bold; padding: 6px 0;">経験工程:</td>
-                                    <td style="padding: 6px 0;">{', '.join(parsed_data.get('experienced_processes', [])) if parsed_data.get('experienced_processes') else '未記入'}</td>
-                                </tr>
-                            </table>
-                            <details style="margin-top: 12px; border-top: 1px dashed rgba(13, 148, 136, 0.2); padding-top: 10px;">
-                                <summary style="cursor: pointer; color: #0d9488; font-weight: bold; font-size: 0.9rem;">職務経歴・詳細を表示</summary>
-                                <div style="margin-top: 8px; font-size: 0.85rem; background-color: rgba(0,0,0,0.02); padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto; white-space: pre-wrap; color: #334155; border: 1px solid rgba(0,0,0,0.05);">
-                                    {parsed_data.get('experienced_processes_content', '記載なし')}
-                                </div>
-                            </details>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    except ValueError as ve:
-                        st.error(f"❌ フォーマットエラー: {ve}")
-                        st.session_state.excel_parsed_data = None
-                    except Exception as e:
-                        st.error(f"❌ Excel解析中にエラーが発生しました: {e}")
-                        st.session_state.excel_parsed_data = None
-                else:
-                    st.info("経歴書データが含まれたExcelファイルをドラッグ＆ドロップまたは選択してください。")
+            if uploaded_file is not None:
+                try:
+                    parsed_data = parse_excel_skillsheet(uploaded_file)
+                    st.session_state.excel_parsed_data = parsed_data
+                    
+                    st.success("✓ Excelファイルの解析に成功しました！")
+                    
+                    # 解析データのプレビューをリッチに表示
+                    st.markdown(f"""
+                    <div style="background-color: rgba(13, 148, 136, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(13, 148, 136, 0.2); margin-top: 10px; margin-bottom: 15px;">
+                        <div style="font-weight: bold; color: #0d9488; font-size: 1.1rem; margin-bottom: 10px;">📋 解析された経歴書プレビュー</div>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+                            <tr>
+                                <td style="font-weight: bold; width: 30%; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">お名前:</td>
+                                <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('name', '未記入')}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">最終学歴:</td>
+                                <td style="padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('final_academic_background', '未記入')}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">技術スキル:</td>
+                                <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('tech_skills', '未記入')}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">保有資格:</td>
+                                <td style="white-space: pre-line; padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,0.05);">{parsed_data.get('qualifications', '未記入')}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: bold; padding: 6px 0;">経験工程:</td>
+                                <td style="padding: 6px 0;">{', '.join(parsed_data.get('experienced_processes', [])) if parsed_data.get('experienced_processes') else '未記入'}</td>
+                            </tr>
+                        </table>
+                        <details style="margin-top: 12px; border-top: 1px dashed rgba(13, 148, 136, 0.2); padding-top: 10px;">
+                            <summary style="cursor: pointer; color: #0d9488; font-weight: bold; font-size: 0.9rem;">職務経歴・詳細を表示</summary>
+                            <div style="margin-top: 8px; font-size: 0.85rem; background-color: rgba(0,0,0,0.02); padding: 10px; border-radius: 4px; max-height: 250px; overflow-y: auto; white-space: pre-wrap; color: #334155; border: 1px solid rgba(0,0,0,0.05);">
+                                {parsed_data.get('experienced_processes_content', '記載なし')}
+                            </div>
+                        </details>
+                    </div>
+                    """, unsafe_allow_html=True)
+                except ValueError as ve:
+                    st.error(f"❌ フォーマットエラー: {ve}")
                     st.session_state.excel_parsed_data = None
+                except Exception as e:
+                    st.error(f"❌ Excel解析中にエラーが発生しました: {e}")
+                    st.session_state.excel_parsed_data = None
+            else:
+                st.info("経歴書データが含まれたExcelファイルをドラッグ＆ドロップまたは選択してください。")
+                st.session_state.excel_parsed_data = None
 
     with col_setup_right:
         with st.container(border=True):
@@ -829,13 +782,10 @@ def render_setup_view():
     st.markdown("---")
     st.subheader("📊 過去の面接履歴")
     
-    # 入力された、またはExcelから読み取られた名前を取得
+    # Excelから読み取られた名前を取得
     current_name = ""
-    if st.session_state.get("es_input_method", "MANUAL") == "EXCEL":
-        if st.session_state.get("excel_parsed_data"):
-            current_name = st.session_state.excel_parsed_data.get("name", "").strip()
-    else:
-        current_name = name_input.strip() if 'name_input' in locals() else ""
+    if st.session_state.get("excel_parsed_data"):
+        current_name = st.session_state.excel_parsed_data.get("name", "").strip()
 
     if current_name:
         history = get_interview_history(current_name)
@@ -847,7 +797,9 @@ def render_setup_view():
                 overall_score = item.get("overall_score", 0)
                 rank = item.get("rank", "D")
                 
-                expander_label = f"📅 {created_at} | 職種: {job_type} | 判定: 【{rank}】 {overall_score}点"
+                # 案件情報の長さに応じて切り詰めて表示
+                job_title_short = job_type[:15] + "..." if len(job_type) > 15 else job_type
+                expander_label = f"📅 {created_at} | 案件: {job_title_short} | 判定: 【{rank}】 {overall_score}点"
                 with st.expander(expander_label):
                     had_camera = item.get("use_camera", 1) == 1
                     
@@ -879,34 +831,27 @@ def render_setup_view():
         else:
             st.info(f"**{current_name}** さんの過去の面接履歴は見つかりませんでした。最初の面接練習を開始して履歴を記録しましょう！")
     else:
-        st.warning("お名前を入力、または経歴書Excelをアップロードすると、過去の履歴が表示されます。")
+        st.warning("経歴書Excelをアップロードすると、過去の履歴が表示されます。")
 
     # 開始ボタンを全幅で配置（設定オプションは動作・API設定カード内へ移動）
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 面接練習を開始する", use_container_width=True):
-        excel_mode = st.session_state.get("es_input_method", "MANUAL") == "EXCEL"
         excel_data = st.session_state.get("excel_parsed_data")
         
-        if excel_mode and not excel_data:
+        if not excel_data:
             st.error("Excelファイルをアップロードして解析を完了させてください。")
         else:
-            if excel_mode:
-                name = excel_data.get("name", "").strip()
-                final_academic_background = excel_data.get("final_academic_background", "").strip()
-                tech_skills = excel_data.get("tech_skills", "").strip()
-                qualifications = excel_data.get("qualifications", "").strip()
-                selected_processes = excel_data.get("experienced_processes", [])
-                experienced_processes_content = excel_data.get("experienced_processes_content", "").strip()
-            else:
-                name = name_input.strip()
-                final_academic_background = final_academic_background.strip()
-                tech_skills = tech_skills.strip()
-                qualifications = qualifications.strip()
-                selected_processes = selected_processes
-                experienced_processes_content = experienced_processes_content.strip()
+            name = excel_data.get("name", "").strip()
+            final_academic_background = excel_data.get("final_academic_background", "").strip()
+            tech_skills = excel_data.get("tech_skills", "").strip()
+            qualifications = excel_data.get("qualifications", "").strip()
+            selected_processes = excel_data.get("experienced_processes", [])
+            experienced_processes_content = excel_data.get("experienced_processes_content", "").strip()
 
-            if not name or not st.session_state.job_type.strip():
-                st.warning("お名前、希望する職種を入力してください。")
+            if not name:
+                st.error("アップロードされた技術経歴書からお名前を抽出できませんでした。Excelファイルを確認してください。")
+            elif not st.session_state.job_type.strip():
+                st.warning("案件情報（募集要項・仕事内容など）を入力してください。")
             elif st.session_state.mode == "AI" and not st.session_state.api_key.strip():
                 st.error("AIモードで実行するには、APIキーを設定してください。")
             else:
