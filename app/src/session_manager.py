@@ -62,8 +62,8 @@ def init_session():
         st.session_state.camera_test_result = None
         st.session_state.h_range = (0.40, 0.60)
         st.session_state.v_range = (0.38, 0.62)
-        st.session_state.chat_history = []
         st.session_state.current_audio_to_play = None
+        st.session_state.interview_phase = "CASE_INTRO"
         
         # 利用可能なカメラデバイスのスキャンをオンデマンド化し、デフォルトで [0] を設定
         st.session_state.available_cameras = [0]
@@ -103,3 +103,4 @@ def reset_session():
     st.session_state.camera_test_result = None
     st.session_state.chat_history = []
     st.session_state.current_audio_to_play = None
+    st.session_state.interview_phase = "CASE_INTRO"
