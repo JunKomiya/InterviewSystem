@@ -6,6 +6,7 @@ from src.gemini_interviewer import GeminiInterviewer
 from src.database import save_interview_result
 from src.tts import generate_tts, play_audio_background
 from src.utils import TEMP_DIR
+from src.speech_recognizer import render_speech_input
 
 def render_interview_view():
     # 音声ファイルの再生（レイアウト影響を防ぐため最上部で実行）
@@ -82,8 +83,37 @@ def render_interview_view():
                 # ユニークな入力キーの生成
                 input_key = f"user_reply_input_{phase}_{len(st.session_state.chat_history)}"
                 
+                speech_text = ""
+
+                if st.session_state.get("use_speech_recognition", False):
+                    st.markdown("#### 🎙️ 音声入力")
+
+                    if st.session_state.get("mode") != "AI" or not st.session_state.get("api_key", "").strip():
+                        st.info("音声認識を利用するには、AIモードとAPIキーが必要です。")
+                    else:
+                        speech_ready_key = f"speech_ready_{input_key}"
+
+                        if speech_ready_key not in st.session_state:
+                            st.session_state[speech_ready_key] = False
+
+                        if not st.session_state[speech_ready_key]:
+                            st.info("面接官の音声を聞き終わってから、音声入力を開始してください。")
+
+                            if st.button("🎙️ 音声入力を開始する", key=f"start_speech_{input_key}"):
+                                st.session_state[speech_ready_key] = True
+                                st.rerun()
+                        else:
+                            speech_text = render_speech_input(input_key)
+
+                if st.session_state.get("use_speech_recognition", False):
+                    st.markdown("#### 🖊️ テキストで回答する")
+
+                if speech_text:
+                    st.session_state[input_key] = speech_text
+                    st.success("文字起こし結果を回答欄に反映しました。")
+
                 user_ans = st.text_area(
-                    "ここに回答を入力してください（タイピング）",
+                    "ここに回答を入力してください",
                     placeholder=placeholder_text,
                     height=150,
                     key=input_key

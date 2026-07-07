@@ -422,8 +422,27 @@ def render_options_section():
         )
         
         st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 10px 0;'>", unsafe_allow_html=True)
-        st.toggle("音声認識を利用する (リアルタイム文字起こしと回答分析)", value=False, disabled=True, help="今後のアップデートで追加予定の機能です。")
-        st.caption("※ 現在はご利用いただけません。 (将来の拡張用)")
+        if "use_speech_recognition" not in st.session_state:
+            st.session_state.use_speech_recognition = False
+
+        speech_available = st.session_state.get("mode") == "AI" and bool(
+            st.session_state.get("api_key", "").strip())
+
+        use_speech_recognition = st.toggle(
+            "音声認識を利用する",
+            value=st.session_state.use_speech_recognition,
+            key="toggle_use_speech_recognition",
+            disabled=not speech_available,
+            help="マイクで録音した回答をGeminiで文字起こしし、回答欄に反映します。AIモードとAPIキーが必要です。"
+        )
+
+        st.session_state.use_speech_recognition = use_speech_recognition
+
+        if not speech_available:
+            st.caption(
+                "※ 音声認識を利用するには、AIモードを選択し、Google AI Studio APIキーを設定してください。")
+        else:
+            st.caption("※ 面接画面でマイク入力による回答が可能になります。送信内容の編集・修正も可能です。")
         
     st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08); margin: 15px 0;'>", unsafe_allow_html=True)
     
