@@ -906,9 +906,10 @@ def render_setup_view():
                     st.session_state.interviewer.api_key = st.session_state.api_key
                     
                 with st.spinner("AI面接官がエントリーシートを読み込み、質問の流れを構成しています..."):
-                    q1_text = st.session_state.interviewer.generate_first_question(st.session_state.es_data)
+                    q1_text = st.session_state.interviewer.generate_case_intro(st.session_state.es_data)
                 
                 st.session_state.question_1 = q1_text
+                st.session_state.interview_phase = "CASE_INTRO"
                 
                 # 音声ファイルを生成
                 timestamp = int(time.time())

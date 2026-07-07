@@ -20,7 +20,7 @@ def render_interview_view():
     if "chat_history" not in st.session_state or not st.session_state.chat_history:
         st.session_state.chat_history = [{
             "role": "interviewer",
-            "text": st.session_state.get("question_1", "自己紹介と、今回アピールしたい自身の強みについてお話しください。"),
+            "text": st.session_state.get("question_1", "はじめまして。面談担当者のナナミです。本日はよろしくお願いいたします。"),
             "audio_path": st.session_state.get("audio_path", "")
         }]
 
@@ -29,7 +29,7 @@ def render_interview_view():
     with col_center:
         with st.container(border=True):
             st.markdown('<div class="glass-card-marker" style="display:none;"></div>', unsafe_allow_html=True)
-            st.subheader("💬 面接チャットログ")
+            st.subheader("💬 面談チャットログ")
             
             # 会話履歴の表示
             for msg in st.session_state.chat_history:
@@ -50,193 +50,258 @@ def render_interview_view():
                 
             st.markdown("<hr style='border: 0.5px solid rgba(0,0,0,0.08)'>", unsafe_allow_html=True)
             
-            # 会話履歴の長さから現在のターン数と言葉・挙動を決定
-            # 履歴の長さ: 1(ナナミの1問目) -> 1回目の回答待ち
-            # 履歴の長さ: 3(ナナミの2問目) -> 2回目の回答待ち
-            is_first_turn = (len(st.session_state.chat_history) == 1)
+            # 現在のフェーズに基づき、入力欄のラベルやプレースホルダー、ボタンテキストなどを動的に設定
+            phase = st.session_state.get("interview_phase", "CASE_INTRO")
             
-            if is_first_turn:
-                input_label = "✍️ あなたの回答（自己紹介と強み）"
-                placeholder_text = "例: はじめまして、プロト太郎と申します。大学では情報工学を専攻しており、強みである行動力を活かして個人でPythonのアプリ開発を行っています。特にReactとStreamlitの連携に力を入れています。"
-                button_label = "回答を送信する"
+            # 完了（締め）のフェーズの場合は入力欄を表示せず、終了案内と評価進捗ボタンを表示
+            if phase == "FINAL_QA_DONE":
+                st.info("🎉 面談がすべて終了しました。面談官の評価レポートを確認してください。")
+                if st.button("📊 評価レポートを表示する", use_container_width=True, type="primary"):
+                    st.session_state.step = "EVALUATION"
+                    st.rerun()
             else:
-                input_label = "✍️ あなたの回答（深掘り質問に対する回答）"
-                placeholder_text = "例: 最大の困難は、個人開発で外部APIの連携エラーの解決に何日も詰まってしまったことです。しかし、公式ドキュメントやGitHubのIssueを読み漁り、解決しました。"
-                button_label = "回答を送信して評価へ進む"
+                if phase == "CASE_INTRO":
+                    input_label = "✍️ 案件に対する質問・確認事項"
+                    placeholder_text = "例: 開発チームで現在注力されている技術や、使用されているGitのワークフローなどがあれば教えていただけますでしょうか？（特に質問がなければ『特にありません。』等を入力して送信してください）"
+                    button_label = "質問を送信する"
+                elif phase == "CASE_QA":
+                    input_label = "✍️ あなたの自己紹介と経疑・スキルアピール"
+                    placeholder_text = "例: 私はプロト太郎と申します。大学では情報工学を専攻し、強みである課題解決力を活かしてJavaやVue.jsを用いたWeb開発の個人プロジェクトを1年半進めてまいりました。今回の案件の技術要件と一致する点が多く、貢献できると考えております。"
+                    button_label = "経歴説明を送信する"
+                elif phase == "CAREER_INTRO":
+                    input_label = "✍️ 深掘り質問に対する回答"
+                    placeholder_text = "例: その課題に対しては、チームのコード規約やレビュー体制を見直すことで対処しました。具体的には、プルリクエスト時のテストケース自動化などを導入し、バグの事前検知力を高めました。"
+                    button_label = "回答を送信する"
+                elif phase == "SKILL_QA":
+                    input_label = "✍️ 最後の質問（逆質問）"
+                    placeholder_text = "例: 今回の案件において、参画初期の段階で最も期待される役割やマイルストーンについて詳しく伺うことはできますでしょうか？（特に無ければ『特にありません。』等を入力して送信してください）"
+                    button_label = "最後の質問を送信する"
                 
-            st.subheader(input_label)
-            
-            # 入力ごとにユニークなキーを設定して、送信後の入力自動クリアを実現
-            input_key = f"user_reply_input_{len(st.session_state.chat_history)}"
-            
-            user_ans = st.text_area(
-                "ここに回答を入力してください（タイピング）",
-                placeholder=placeholder_text,
-                height=150,
-                key=input_key
-            )
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button(button_label):
-                if not user_ans.strip():
-                    st.warning("回答を入力してください。")
-                else:
-                    # 回答を会話履歴に追加
-                    st.session_state.chat_history.append({
-                        "role": "student",
-                        "text": user_ans.strip()
-                    })
-                    
-                    if is_first_turn:
-                        # 後方互換性のために変数に保存
-                        st.session_state.user_answer_1 = user_ans.strip()
+                st.subheader(input_label)
+                
+                # ユニークな入力キーの生成
+                input_key = f"user_reply_input_{phase}_{len(st.session_state.chat_history)}"
+                
+                user_ans = st.text_area(
+                    "ここに回答を入力してください（タイピング）",
+                    placeholder=placeholder_text,
+                    height=150,
+                    key=input_key
+                )
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button(button_label, use_container_width=True):
+                    if not user_ans.strip():
+                        st.warning("回答を入力してください。")
+                    else:
+                        # ユーザーの発言を履歴に追加
+                        st.session_state.chat_history.append({
+                            "role": "student",
+                            "text": user_ans.strip()
+                        })
                         
-                        # --- 深掘り質問生成 ---
+                        # インタビュアーの準備
                         if not st.session_state.get("interviewer"):
                             st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
                         else:
                             st.session_state.interviewer.mode = st.session_state.mode
                             st.session_state.interviewer.api_key = st.session_state.api_key
-        
-                        with st.spinner("AI面接官があなたの回答を評価し、深掘り質問を構成しています..."):
-                            conversation_log = [
-                                {"speaker": "interviewer", "text": st.session_state.question_1},
-                                {"speaker": "student", "text": st.session_state.user_answer_1}
-                            ]
-                            feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
-                                es_data=st.session_state.es_data,
-                                conversation_log=conversation_log
-                            )
-                        
-                        deep_dive_full = f"{feedback_intro}\n\n{deep_dive_txt}"
-                        st.session_state.deep_dive_text = deep_dive_full
-                        deep_dive_tts = f"{feedback_intro} {deep_dive_txt}"
-                        
-                        # 音声ファイル生成
-                        timestamp = int(time.time())
-                        filename = os.path.join(TEMP_DIR, f"temp_audio_q2_{timestamp}.mp3")
-                        
-                        with st.spinner("面接官が質問を考えています..."):
-                            success = generate_tts(deep_dive_tts, filename)
-                            if success:
-                                st.session_state.deep_dive_audio_path = filename
-                                st.session_state.current_audio_to_play = filename
-                            else:
-                                st.session_state.current_audio_to_play = None
                             
-                            # 会話履歴に質問を追加
-                            st.session_state.chat_history.append({
-                                "role": "interviewer",
-                                "text": deep_dive_full,
-                                "audio_path": filename if success else ""
-                            })
-                            st.rerun()
-                    else:
-                        # 2回目の回答（深掘り回答）
-                        st.session_state.user_answer_2 = user_ans.strip()
-                        
-                        # 視線トラッキングの停止とタイムラプス動画の出力
-                        if "recorder" in st.session_state and st.session_state.recorder is not None:
-                            with st.spinner("カメラをオフにし、結果の解析を行っています..."):
-                                st.session_state.recorder.stop()
-                                ts = int(time.time())
-                                # 動画・静止画を一時フォルダへ出力
-                                video_fn = os.path.join(TEMP_DIR, f"temp_gaze_timelapse_{ts}.webm")
-                                map_fn = os.path.join(TEMP_DIR, f"temp_gaze_map_{ts}.png")
-                                
-                                # 静止画の生成は高速なので同期で実行
-                                st.session_state.recorder.generate_gaze_map(map_fn)
-                                
-                                st.session_state.gaze_video_path = video_fn
-                                st.session_state.gaze_map_path = map_fn
-                                
-                                # 動画ファイルの書き出しを非同期でバックグラウンド実行
-                                t = threading.Thread(
-                                    target=st.session_state.recorder.save_timelapse,
-                                    args=(video_fn,)
+                        # --- 各フェーズごとの応答生成と状態推移ロジック ---
+                        if phase == "CASE_INTRO":
+                            # 1. 案件説明 ➡️ 2. 案件質問への回答生成
+                            with st.spinner("AI面接官が質問への回答を構成しています..."):
+                                reply, next_prompt = st.session_state.interviewer.generate_case_qa_reply(
+                                    es_data=st.session_state.es_data,
+                                    user_question=user_ans.strip()
                                 )
-                                t.daemon = True
-                                t.start()
-                                st.session_state.gaze_video_thread = t
+                            
+                            combined_text = f"{reply}\n\n{next_prompt}"
+                            combined_tts = f"{reply} {next_prompt}"
+                            
+                            # 音声ファイル生成
+                            timestamp = int(time.time())
+                            filename = os.path.join(TEMP_DIR, f"temp_audio_case_qa_{timestamp}.mp3")
+                            
+                            with st.spinner("音声（TTS）を生成中..."):
+                                success = generate_tts(combined_tts, filename)
+                                st.session_state.chat_history.append({
+                                    "role": "interviewer",
+                                    "text": combined_text,
+                                    "audio_path": filename if success else ""
+                                })
+                                st.session_state.current_audio_to_play = filename if success else None
+                            
+                            st.session_state.interview_phase = "CASE_QA"
+                            st.rerun()
+                            
+                        elif phase == "CASE_QA":
+                            # 2. 案件質問への回答 ➡️ 3. 経歴説明の深掘り質問生成
+                            st.session_state.user_answer_1 = user_ans.strip()  # 後方互換性
+                            
+                            with st.spinner("AI面接官が経歴を読み込み、深掘り質問を構成しています..."):
+                                # 質問生成用にこれまでの対話履歴を speaker 形式で構築
+                                conversation_log = [
+                                    {"speaker": "interviewer", "text": msg["text"]} if msg["role"] == "interviewer" else {"speaker": "student", "text": msg["text"]}
+                                    for msg in st.session_state.chat_history[:-1] # 送信した自分の発言を除く前の履歴
+                                ]
+                                # 現在送信した自己PRを追加
+                                conversation_log.append({"speaker": "student", "text": user_ans.strip()})
                                 
-                                # 視線安定度スコアを動的計算 (まばたき・検出エラー除外)
-                                gps = st.session_state.recorder.gaze_points
-                                if gps:
-                                    total_frames = len(gps)
-                                    valid_face_count = sum(1 for gp in gps if gp.get("is_valid", True))
+                                feedback_intro, deep_dive_txt = st.session_state.interviewer.generate_deep_dive_question(
+                                    es_data=st.session_state.es_data,
+                                    conversation_log=conversation_log
+                                )
+                                
+                            combined_text = f"{feedback_intro}\n\n{deep_dive_txt}"
+                            combined_tts = f"{feedback_intro} {deep_dive_txt}"
+                            
+                            # 音声ファイル生成
+                            timestamp = int(time.time())
+                            filename = os.path.join(TEMP_DIR, f"temp_audio_deep_dive_{timestamp}.mp3")
+                            
+                            with st.spinner("音声（TTS）を生成中..."):
+                                success = generate_tts(combined_tts, filename)
+                                st.session_state.chat_history.append({
+                                    "role": "interviewer",
+                                    "text": combined_text,
+                                    "audio_path": filename if success else ""
+                                })
+                                st.session_state.current_audio_to_play = filename if success else None
+                                
+                            st.session_state.interview_phase = "CAREER_INTRO"
+                            st.rerun()
+                            
+                        elif phase == "CAREER_INTRO":
+                            # 3. 経歴質問への回答 ➡️ 4. 逆質問への誘導
+                            st.session_state.user_answer_2 = user_ans.strip()  # 後方互換性
+                            
+                            reply = "ご回答いただきありがとうございました。ご自身の強みや課題への取り組みについて非常に良く分かりました。"
+                            next_prompt = "それでは面談の最後に、あなたの方から弊社に対して何かご質問（逆質問）や確認したいことはございますか？"
+                            combined_text = f"{reply}\n\n{next_prompt}"
+                            combined_tts = f"{reply} {next_prompt}"
+                            
+                            # 音声ファイル生成
+                            timestamp = int(time.time())
+                            filename = os.path.join(TEMP_DIR, f"temp_audio_prompt_final_{timestamp}.mp3")
+                            
+                            with st.spinner("音声（TTS）を生成中..."):
+                                success = generate_tts(combined_tts, filename)
+                                st.session_state.chat_history.append({
+                                    "role": "interviewer",
+                                    "text": combined_text,
+                                    "audio_path": filename if success else ""
+                                })
+                                st.session_state.current_audio_to_play = filename if success else None
+                                
+                            st.session_state.interview_phase = "SKILL_QA"
+                            st.rerun()
+                            
+                        elif phase == "SKILL_QA":
+                            # 4. 逆質問 ➡️ 5. 逆質問回答と締めの挨拶の生成、および全体の評価レポート生成
+                            
+                            # A. 視線トラッキングの停止とデータ処理 (ONの場合のみ)
+                            if "recorder" in st.session_state and st.session_state.recorder is not None:
+                                with st.spinner("カメラをオフにし、結果の解析を行っています..."):
+                                    st.session_state.recorder.stop()
+                                    ts = int(time.time())
+                                    video_fn = os.path.join(TEMP_DIR, f"temp_gaze_timelapse_{ts}.webm")
+                                    map_fn = os.path.join(TEMP_DIR, f"temp_gaze_map_{ts}.png")
                                     
-                                    # 有効フレーム
-                                    valid_gaze_frames = [gp for gp in gps if gp.get("is_valid", True) and not gp.get("is_blink", False)]
+                                    st.session_state.recorder.generate_gaze_map(map_fn)
+                                    st.session_state.gaze_video_path = video_fn
+                                    st.session_state.gaze_map_path = map_fn
                                     
-                                    if len(valid_gaze_frames) > 0:
-                                        away_count = sum(1 for gp in valid_gaze_frames if gp.get("looking_away", False))
-                                        st.session_state.eye_contact_score = int((1 - away_count / len(valid_gaze_frames)) * 100)
+                                    t = threading.Thread(
+                                        target=st.session_state.recorder.save_timelapse,
+                                        args=(video_fn,)
+                                    )
+                                    t.daemon = True
+                                    t.start()
+                                    st.session_state.gaze_video_thread = t
+                                    
+                                    gps = st.session_state.recorder.gaze_points
+                                    if gps:
+                                        total_frames = len(gps)
+                                        valid_face_count = sum(1 for gp in gps if gp.get("is_valid", True))
+                                        valid_gaze_frames = [gp for gp in gps if gp.get("is_valid", True) and not gp.get("is_blink", False)]
+                                        
+                                        if len(valid_gaze_frames) > 0:
+                                            away_count = sum(1 for gp in valid_gaze_frames if gp.get("looking_away", False))
+                                            st.session_state.eye_contact_score = int((1 - away_count / len(valid_gaze_frames)) * 100)
+                                        else:
+                                            st.session_state.eye_contact_score = 0
+                                            
+                                        if total_frames > 0 and (valid_face_count / total_frames) < 0.5:
+                                            st.session_state.gaze_measurement_warning = True
+                                        else:
+                                            st.session_state.gaze_measurement_warning = False
                                     else:
                                         st.session_state.eye_contact_score = 0
-                                        
-                                    # 有効に顔を認識できた割合が全体の50%未満の場合、警告フラグを設定
-                                    if total_frames > 0 and (valid_face_count / total_frames) < 0.5:
                                         st.session_state.gaze_measurement_warning = True
-                                    else:
-                                        st.session_state.gaze_measurement_warning = False
-                                else:
-                                    st.session_state.eye_contact_score = 0
-                                    st.session_state.gaze_measurement_warning = True
-                        else:
-                            st.session_state.eye_contact_score = 100
-                            st.session_state.gaze_measurement_warning = False
-                            st.session_state.gaze_video_path = ""
-                            st.session_state.gaze_map_path = ""
-                        
-                        # --- 総合評価生成 ---
-                        if not st.session_state.get("interviewer"):
-                            st.session_state.interviewer = GeminiInterviewer(st.session_state.api_key, mode=st.session_state.mode)
-                        else:
-                            st.session_state.interviewer.mode = st.session_state.mode
-                            st.session_state.interviewer.api_key = st.session_state.api_key
-        
-                        with st.spinner("AI面接官が全体の回答を分析し、評価レポートをまとめています..."):
-                            # chat_historyからGeminiInterviewer用にspeaker形式のログを生成
-                            conversation_log = [
-                                {"speaker": msg["role"], "text": msg["text"]}
-                                for msg in st.session_state.chat_history
-                            ]
-                            eval_json = st.session_state.interviewer.generate_evaluation_report(
-                                es_data=st.session_state.es_data,
-                                conversation_log=conversation_log
-                            )
-                        
-                        st.session_state.overall_score = eval_json.get("overall_score", 88)
-                        st.session_state.rank = eval_json.get("rank", "A")
-                        st.session_state.consistency_score = eval_json.get("consistency_score", 90)
-                        st.session_state.content_quality_score = eval_json.get("content_quality_score", 85)
-                        
-                        summary = eval_json.get("evaluation_summary", "")
-                        advice = eval_json.get("improvement_advice", "")
-                        
-                        st.session_state.eval_text = (
-                            f"お疲れ様でした、{st.session_state.name}さん！非常に実りある面接でした。\n\n"
-                            f"【総評】\n"
-                            f"{summary}\n\n"
-                            f"【今後の改善アドバイス】\n"
-                            f"{advice}"
-                        )
-                        
-                        eval_tts = f"面接練習お疲れ様でした。あなたのアピールポイントと改善点を含めた詳細な診断評価レポートを作成しましたので、画面をご確認ください。本日はお疲れ様でした！"
-                        
-                        # 音声ファイル生成
-                        timestamp = int(time.time())
-                        filename = os.path.join(TEMP_DIR, f"temp_audio_eval_{timestamp}.mp3")
-                        
-                        with st.spinner("面接官がフィードバックをまとめています..."):
-                            success = generate_tts(eval_tts, filename)
-                            if success:
-                                st.session_state.eval_audio_path = filename
+                            else:
+                                st.session_state.eye_contact_score = 100
+                                st.session_state.gaze_measurement_warning = False
+                                st.session_state.gaze_video_path = ""
+                                st.session_state.gaze_map_path = ""
+                                
+                            # B. ナナミの最後の逆質問回答と締めの挨拶の生成
+                            with st.spinner("AI面接官が質問への回答をまとめています..."):
+                                reply_text = st.session_state.interviewer.generate_final_qa_reply(
+                                    es_data=st.session_state.es_data,
+                                    user_question=user_ans.strip()
+                                )
+                                
+                            # 音声生成
+                            timestamp = int(time.time())
+                            filename = os.path.join(TEMP_DIR, f"temp_audio_final_reply_{timestamp}.mp3")
                             
-                            use_camera_val = st.session_state.get("use_camera", True)
-                            use_camera_int = 1 if use_camera_val else 0
-        
-                            # データベースに詳細な結果を保存
+                            with st.spinner("音声（TTS）を生成中..."):
+                                success = generate_tts(reply_text, filename)
+                                st.session_state.chat_history.append({
+                                    "role": "interviewer",
+                                    "text": reply_text,
+                                    "audio_path": filename if success else ""
+                                })
+                                st.session_state.current_audio_to_play = filename if success else None
+                            
+                            # C. 全対話の総合評価の生成
+                            with st.spinner("AI面接官が全体の対話を分析し、評価レポートを作成しています..."):
+                                # 全履歴からGeminiInterviewer用にspeaker形式のログを生成
+                                conversation_log = [
+                                    {"speaker": "interviewer" if msg["role"] == "interviewer" else "student", "text": msg["text"]}
+                                    for msg in st.session_state.chat_history
+                                ]
+                                eval_json = st.session_state.interviewer.generate_evaluation_report(
+                                    es_data=st.session_state.es_data,
+                                    conversation_log=conversation_log
+                                )
+                                
+                            st.session_state.overall_score = eval_json.get("overall_score", 88)
+                            st.session_state.rank = eval_json.get("rank", "A")
+                            st.session_state.consistency_score = eval_json.get("consistency_score", 90)
+                            st.session_state.content_quality_score = eval_json.get("content_quality_score", 85)
+                            
+                            summary = eval_json.get("evaluation_summary", "")
+                            advice = eval_json.get("improvement_advice", "")
+                            
+                            st.session_state.eval_text = (
+                                f"お疲れ様でした、{st.session_state.name}さん！非常に有意義な面談でした。\n\n"
+                                f"【総評】\n"
+                                f"{summary}\n\n"
+                                f"【今後の改善アドバイス】\n"
+                                f"{advice}"
+                            )
+                            
+                            eval_tts = "面談お疲れ様でした。あなたのアピールポイントと改善点を含めた詳細な診断評価レポートを作成しましたので、画面をご確認ください。"
+                            
+                            # 評価音声生成
+                            timestamp = int(time.time())
+                            filename_eval = os.path.join(TEMP_DIR, f"temp_audio_eval_{timestamp}.mp3")
+                            generate_tts(eval_tts, filename_eval)
+                            st.session_state.eval_audio_path = filename_eval
+                            
+                            # D. データベースに詳細な結果を保存
                             save_interview_result(
                                 user_name=st.session_state.name,
                                 job_type=st.session_state.job_type,
@@ -248,53 +313,9 @@ def render_interview_view():
                                 eval_text=st.session_state.eval_text,
                                 user_answer_1=st.session_state.user_answer_1,
                                 user_answer_2=st.session_state.user_answer_2,
-                                final_academic_background=st.session_state.final_academic_background,
-                                tech_skills=st.session_state.tech_skills,
-                                qualifications=st.session_state.qualifications,
-                                experienced_processes=", ".join(st.session_state.experienced_processes),
-                                experienced_processes_content=st.session_state.experienced_processes_content,
-                                use_camera=use_camera_int
+                                created_at=time.strftime('%Y-%m-%d %H:%M:%S'),
+                                use_camera=1 if st.session_state.get("use_camera", True) else 0
                             )
                             
-                            st.session_state.step = "EVALUATION"
+                            st.session_state.interview_phase = "FINAL_QA_DONE"
                             st.rerun()
-
-    # JavaScriptによるCtrl+Enter送信・Enter改行の制御（st.components.v1.htmlを用いて安全にiframe内でスクリプトを実行し、window.parent.document経由で親画面を操作）
-    st.components.v1.html(
-        """
-        <script>
-        function setupEnterSubmit() {
-            try {
-                const doc = window.parent.document;
-                const textareas = doc.querySelectorAll('textarea');
-                textareas.forEach(textarea => {
-                    if (!textarea.dataset.enterSubmitAdded) {
-                        textarea.dataset.enterSubmitAdded = 'true';
-                        textarea.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                                e.preventDefault();
-                                textarea.blur();
-                                setTimeout(() => {
-                                    const buttons = Array.from(doc.querySelectorAll('button'));
-                                    const submitBtn = buttons.find(btn => 
-                                        btn.textContent.includes('回答を送信') || 
-                                        btn.textContent.includes('送信する')
-                                    );
-                                    if (submitBtn) {
-                                        submitBtn.click();
-                                    }
-                                }, 150);
-                            }
-                        });
-                    }
-                });
-            } catch (e) {
-                console.error("Ctrl+Enter listener registration failed: ", e);
-            }
-        }
-        setInterval(setupEnterSubmit, 500);
-        </script>
-        """,
-        height=0,
-        width=0
-    )
